@@ -1,0 +1,69 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: run
+    container_name: mushoku-world-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Passa o nome do container do banco como Host para a aplicação
+      DB_HOST: db
+      DB_PORT: 5432
+      # Caminhos onde o Docker monta os secrets dentro do container
+      DISCORD_TOKEN_FILE: /run/secrets/discord_token
+      REVOLT_TOKEN_FILE: /run/secrets/revolt_token
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - discord_token
+      - revolt_token
+      - db_password
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: postgres:17-alpine
+    container_name: mushoku-world-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - internal
+
+secrets:
+  discord_token:
+    file: ./secrets/discord_token.txt
+  revolt_token:
+    file: ./secrets/revolt_token.txt
+  db_password:
+    file: ./secrets/db_password.txt
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  db_data:
+    driver: local
