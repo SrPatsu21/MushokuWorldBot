@@ -1,11 +1,10 @@
+import { dispatchCommand } from '../core/commandHandler';
 import { WebSocketManager } from '@discordjs/ws';
 import { REST } from '@discordjs/rest';
 import { API, GatewayDispatchEvents, GatewayIntentBits } from '@discordjs/core';
 import { ENV } from '../config/env';
 import { getServerPrefix } from '../config/database';
 import { UnifiedContext } from '../core/types';
-import { handleSetPrefix } from '../commands/setprefix';
-import { handleProfile } from '../commands/profile';
 
 const rest = new REST({ version: '10' }).setToken(ENV.DISCORD_TOKEN);
 export const discordApi = new API(rest);
@@ -15,7 +14,6 @@ export const discordGateway = new WebSocketManager({
   intents: GatewayIntentBits.Guilds | GatewayIntentBits.GuildMessages | GatewayIntentBits.MessageContent,
   rest,
 });
-
 discordGateway.on(GatewayDispatchEvents.MessageCreate, async ({ data: message }) => {
   if (message.author.bot || !message.guild_id) return;
 
@@ -26,6 +24,8 @@ discordGateway.on(GatewayDispatchEvents.MessageCreate, async ({ data: message })
 
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift()?.toLowerCase();
+
+  if (!command) return;
 
   const ctx: UnifiedContext = {
     platform: 'discord',
@@ -42,6 +42,6 @@ discordGateway.on(GatewayDispatchEvents.MessageCreate, async ({ data: message })
     mentionAuthor: () => `<@${message.author.id}>`,
   };
 
-  if (command === 'setprefix') await handleSetPrefix(ctx, args);
-  if (command === 'perfil') await handleProfile(ctx, args);
+  // Executa o comando de forma genérica
+  await dispatchCommand(ctx, command, args);
 });

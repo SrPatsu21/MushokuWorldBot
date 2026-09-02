@@ -2,8 +2,7 @@ import { Client } from 'revolt.js';
 import { ENV } from '../config/env';
 import { getServerPrefix } from '../config/database';
 import { UnifiedContext } from '../core/types';
-import { handleSetPrefix } from '../commands/setprefix';
-import { handleProfile } from '../commands/profile';
+import { dispatchCommand } from '../core/commandHandler';
 
 export const revoltBot = new Client();
 
@@ -22,6 +21,8 @@ revoltBot.on('messageCreate', async (message) => {
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift()?.toLowerCase();
 
+  if (!command) return;
+
   const ctx: UnifiedContext = {
     platform: 'revolt',
     serverId,
@@ -34,6 +35,5 @@ revoltBot.on('messageCreate', async (message) => {
     mentionAuthor: () => `<@${message.author._id}>`,
   };
 
-  if (command === 'setprefix') await handleSetPrefix(ctx, args);
-  if (command === 'perfil') await handleProfile(ctx, args);
+  await dispatchCommand(ctx, command, args);
 });
