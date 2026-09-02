@@ -1,0 +1,80 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Ranks de Habilidade no universo Mushoku Tensei
+enum SkillRank {
+  NONE
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  SAINT
+  KING
+  EMPEROR
+  GOD
+}
+
+// Tabela de Configurações de Servidores
+model Server {
+  id     String @id @map("server_id") // Ex: "discord:123456" ou "revolt:789"
+  prefix String @default("!")
+
+  @@map("servers")
+}
+
+// Perfil de Usuário (Suporta Global com serverId = "0" ou Isolado por Servidor)
+model UserProfile {
+  id             Int             @id @default(autoincrement())
+  platform       String          // "discord" ou "revolt"
+  platformUserId String          @map("platform_user_id")
+  serverId       String          @default("0") @map("server_id") // "0" = Global
+  username       String
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  // Relacionamento 1-para-1 com as duas classes
+  swordsman      SwordsmanClass?
+  mage           MageClass?
+
+  @@unique([platform, platformUserId, serverId])
+  @@map("user_profiles")
+}
+
+// Classe Swordsman com 3 campos individuais para os estilos
+model SwordsmanClass {
+  id        Int         @id @default(autoincrement())
+  profileId Int         @unique @map("profile_id")
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // 3 Estilos de Esgrima individuais
+  swordGod  SkillRank   @default(NONE) @map("sword_god")
+  northGod  SkillRank   @default(NONE) @map("north_god")
+  waterGod  SkillRank   @default(NONE) @map("water_god")
+
+  @@map("swordsman_classes")
+}
+
+// Classe Mage com campos individuais para cada tipo de magia
+model MageClass {
+  id             Int         @id @default(autoincrement())
+  profileId      Int         @unique @map("profile_id")
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Magias Elementais
+  fire           SkillRank   @default(NONE)
+  water          SkillRank   @default(NONE)
+  wind           SkillRank   @default(NONE)
+  earth          SkillRank   @default(NONE)
+
+  // Magias de Suporte
+  healing        SkillRank   @default(NONE)
+  detoxification SkillRank   @default(NONE)
+  protection     SkillRank   @default(NONE)
+  summoning      SkillRank   @default(NONE)
+
+  @@map("mage_classes")
+}

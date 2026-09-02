@@ -7,12 +7,14 @@
     "start": "bun run src/index.ts"
   },
   "dependencies": {
-    "@discordjs/core": "^1.1.0",
-    "@discordjs/rest": "^2.2.0",
-    "@discordjs/ws": "^1.1.0",
-    "revolt.js": "^7.0.0"
+    "@discordjs/core": "^1.2.0",
+    "@discordjs/rest": "^2.6.3",
+    "@discordjs/ws": "^1.2.3",
+    "@prisma/client": "^6.4.0",
+    "revolt.js": "^7.2.0"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "prisma": "^6.4.0"
   }
 }
