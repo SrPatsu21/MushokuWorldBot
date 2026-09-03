@@ -7,7 +7,7 @@ import { dispatchCommand } from '../core/commandHandler';
 export const revoltBot = new Client();
 
 revoltBot.on('ready', () => {
-  console.log(`🟢 Revolt WebSocket conectado! Logado como: ${revoltBot.user?.username}`);
+  console.log(`🟢 Revolt WebSocket connected! Logged with: ${revoltBot.user?.username}`);
 });
 
 revoltBot.on('messageCreate', async (message) => {

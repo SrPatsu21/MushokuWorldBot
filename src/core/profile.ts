@@ -7,6 +7,10 @@ export async function getOrCreateProfile(
   username: string,
   serverId: string = '0'
 ) {
+  if (!platformUserId) {
+    throw new Error('platformUserId cannot be undefined or empty when fetching/creating a profile.');
+  }
+
   return await prisma.userProfile.upsert({
     where: {
       platform_platformUserId_serverId: {
@@ -21,7 +25,6 @@ export async function getOrCreateProfile(
       platformUserId,
       serverId,
       username,
-      // Cria automaticamente a entrada de Espadachim e Mago com os campos default (NONE)
       swordsman: {
         create: {},
       },
@@ -36,7 +39,7 @@ export async function getOrCreateProfile(
   });
 }
 
-// Exemplo de como atualizar o nível de um estilo de esgrima sem escrever SQL
+// Update swordsman style level via Prisma
 export async function updateSwordsmanStyle(
   profileId: number,
   style: 'swordGod' | 'northGod' | 'waterGod',
@@ -48,7 +51,7 @@ export async function updateSwordsmanStyle(
   });
 }
 
-// Exemplo de como atualizar uma magia sem escrever SQL
+// Update magic rank via Prisma
 export async function updateMageMagic(
   profileId: number,
   magic: 'fire' | 'water' | 'wind' | 'earth' | 'healing' | 'detoxification' | 'protection' | 'summoning',

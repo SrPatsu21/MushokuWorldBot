@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import { ENV } from './env';
 import { readFileSync } from 'fs';
 
-// Função para obter o password seguro
 function getDbPassword(): string {
   if (process.env.DB_PASSWORD_FILE) {
     try {
@@ -22,10 +21,9 @@ export const prisma = new PrismaClient();
 
 export async function initDatabase() {
   await prisma.$connect();
-  console.log('✅ Prisma conectado ao PostgreSQL!');
+  console.log('✅ Prisma connected to PostgreSQL!');
 }
 
-// Obter o prefixo de um servidor (retorna '!' por padrão)
 export async function getServerPrefix(serverId: string): Promise<string> {
   const server = await prisma.server.findUnique({
     where: { id: serverId },
@@ -33,7 +31,6 @@ export async function getServerPrefix(serverId: string): Promise<string> {
   return server?.prefix || '!';
 }
 
-// Definir/Atualizar o prefixo de um servidor
 export async function setServerPrefix(serverId: string, prefix: string): Promise<void> {
   await prisma.server.upsert({
     where: { id: serverId },

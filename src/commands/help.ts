@@ -5,11 +5,11 @@ export async function handleHelp(ctx: UnifiedContext) {
   const prefix = await getServerPrefix(ctx.serverId);
 
   const response = [
-    `📜 **Central de Ajuda - Mushoku World Bot**`,
+    `📜 **Help Center - Mushoku World Bot**`,
     ``,
-    `• \`${prefix}help\` - Exibe esta lista de comandos.`,
-    `• \`${prefix}perfil\` - Exibe as informações do seu perfil.`,
-    `• \`${prefix}setprefix <símbolo>\` - Altera o prefixo de comandos no servidor.`,
+    `• \`${prefix}help\` - Show command list.`,
+    `• \`${prefix}profile\` - Show user profile info.`,
+    `• \`${prefix}setprefix <new prefix>\` - Change commands prefix for this server.`,
   ].join('\n');
 
   await ctx.reply(response);

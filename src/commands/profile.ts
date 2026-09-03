@@ -4,7 +4,7 @@ import { getOrCreateProfile } from '../core/profile';
 export async function handleProfile(ctx: UnifiedContext, args: string[]) {
   try {
     const scope = args[0]?.toLowerCase() === 'server' ? ctx.serverId : '0';
-    const profileTypeLabel = scope === '0' ? 'Global' : 'Servidor';
+    const profileTypeLabel = scope === '0' ? 'Global' : 'Server';
 
     const profile = await getOrCreateProfile(
       ctx.platform,
@@ -16,14 +16,14 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
     const sw = profile.swordsman;
     const mg = profile.mage;
 
-    let response = `📜 **Perfil de ${profile.username} (${profileTypeLabel})**\n\n`;
+    let response = `📜 **Profile of ${profile.username} (${profileTypeLabel})**\n\n`;
 
-    response += `⚔️ **Estilos de Esgrima:**\n`;
+    response += `⚔️ **Swordsmanship:**\n`;
     response += `• Sword God: \`${sw?.swordGod || 'NONE'}\`\n`;
     response += `• North God: \`${sw?.northGod || 'NONE'}\`\n`;
     response += `• Water God: \`${sw?.waterGod || 'NONE'}\`\n\n`;
 
-    response += `🪄 **Magias:**\n`;
+    response += `🪄 **Magic:**\n`;
     response += `• Fire: \`${mg?.fire || 'NONE'}\` | Water: \`${mg?.water || 'NONE'}\`\n`;
     response += `• Wind: \`${mg?.wind || 'NONE'}\` | Earth: \`${mg?.earth || 'NONE'}\`\n`;
     response += `• Healing: \`${mg?.healing || 'NONE'}\` | Detox: \`${mg?.detoxification || 'NONE'}\`\n`;
@@ -31,7 +31,7 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
 
     await ctx.reply(response);
   } catch (error) {
-    console.error('Erro ao processar comando de perfil:', error);
-    await ctx.reply('❌ Ocorreu um erro ao carregar o seu perfil.');
+    console.error('Error to process profile command:', error);
+    await ctx.reply('❌ an error occurred while loading the profile.');
   }
 }

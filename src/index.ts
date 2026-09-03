@@ -11,38 +11,38 @@ function isTokenValid(token: string | undefined): boolean {
 
 async function bootstrap() {
   try {
-    console.log('⚡ Conectando ao Banco de Dados...');
+    console.log('⚡ Connected to DB...');
     await initDatabase();
 
-    console.log('🚀 Iniciando Serviços...');
+    console.log('🚀 starting services...');
 
     // --- CONEXÃO DISCORD ---
     if (isTokenValid(ENV.DISCORD_TOKEN)) {
       try {
         await discordGateway.connect();
-        console.log('✅ Bot do Discord conectado com sucesso!');
+        console.log('✅ Discord Bot connected successfully!');
       } catch (err: any) {
-        console.error('⚠️ Discord: Token configurado, mas falhou ao autenticar.', err?.message || err);
+        console.error('⚠️ Discord: Token configured, but fail to authenticate.', err?.message || err);
       }
     } else {
-      console.warn('⚠️ Discord: Token não fornecido ou inválido em secrets/discord_token.txt. Ignorando conexão.');
+      console.warn('⚠️ Discord: No valid Token was provided at secrets/discord_token.txt connection ignore.');
     }
 
     // --- CONEXÃO REVOLT ---
     if (isTokenValid(ENV.REVOLT_TOKEN)) {
       try {
         await revoltBot.loginBot(ENV.REVOLT_TOKEN);
-        console.log('✅ Autenticação do Revolt iniciada!');
+        console.log('✅ Revolt connected successfully!!');
       } catch (err: any) {
-        console.error('⚠️ Revolt: Token configurado, mas falhou ao autenticar.', err?.message || err);
+        console.error('⚠️ Revolt: Token configured, but fail to authenticate.', err?.message || err);
       }
     } else {
-      console.warn('⚠️ Revolt: Token não fornecido ou inválido em secrets/revolt_token.txt. Ignorando conexão.');
+      console.warn('⚠️ Revolt: No valid Token was provided at secrets/revolt_token.txt connection ignore.');
     }
 
-    console.log('🚀 Processo de inicialização concluído!');
+    console.log('🚀 process initialization concluded!');
   } catch (error) {
-    console.error('❌ Falha crítica no banco de dados:', error);
+    console.error('❌ Fatal error on DB:', error);
     process.exit(1);
   }
 }
