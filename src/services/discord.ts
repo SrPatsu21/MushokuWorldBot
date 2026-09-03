@@ -5,6 +5,7 @@ import { ENV } from '../config/env';
 import { getServerPrefix } from '../config/database';
 import { UnifiedContext } from '../core/types';
 import { dispatchCommand } from '../core/commandHandler';
+import { Permissions } from '@discordjs/core';
 
 const rest = new REST({ version: '10' }).setToken(ENV.DISCORD_TOKEN);
 export const discordApi = new API(rest);
@@ -51,6 +52,17 @@ client.on(GatewayDispatchEvents.MessageCreate, async ({ data: message }) => {
       });
     },
     mentionAuthor: () => `<@${message.author.id}>`,
+    hasAdminPermission: async () => {
+      if (message.member?.permissions) {
+        const permissions = BigInt(message.member.permissions);
+        const ADMINISTRATOR = BigInt(1 << 3); // 0x8 or bit 3 (Administrator)
+        const MANAGE_GUILD = BigInt(1 << 5);  // 0x20 or bit 5 (Manage Server)
+
+        return (permissions & ADMINISTRATOR) === ADMINISTRATOR ||
+               (permissions & MANAGE_GUILD) === MANAGE_GUILD;
+      }
+      return false;
+    },
   };
 
   try {

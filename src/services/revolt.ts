@@ -11,7 +11,10 @@ revoltBot.on('ready', () => {
 });
 
 revoltBot.on('messageCreate', async (message) => {
-  if (message.author?.bot || !message.channel || !message.server) return;
+  // Obtém o ID do autor com fallback seguro
+  const authorId = message.authorId || message.author?._id;
+
+  if (!authorId || message.author?.bot || !message.channel || !message.server) return;
 
   const serverId = `revolt:${message.server._id}`;
   const prefix = await getServerPrefix(serverId);
@@ -27,12 +30,27 @@ revoltBot.on('messageCreate', async (message) => {
     platform: 'revolt',
     serverId,
     channelId: message.channel._id,
-    authorId: message.author._id,
-    authorName: message.author.username,
+    authorId,
+    authorName: message.author?.username || 'Unknown',
     reply: async (content: string) => {
       await message.reply(content, true);
     },
-    mentionAuthor: () => `<@${message.author._id}>`,
+    mentionAuthor: () => `<@${authorId}>`,
+    hasAdminPermission: async () => {
+      if (message.server?.owner === authorId) return true;
+
+      try {
+        if (message.member) {
+          return message.member.hasPermission(message.channel, 'ManageServer') || false;
+        }
+
+        const member = await message.server?.fetchMember(authorId);
+        return member?.hasPermission(message.channel, 'ManageServer') || false;
+      } catch (err) {
+        console.error('⚠️ Error checking admin permissions in Revolt:', err);
+        return false;
+      }
+    },
   };
 
   try {
