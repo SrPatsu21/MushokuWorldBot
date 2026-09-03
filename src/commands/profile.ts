@@ -1,15 +1,38 @@
 import { UnifiedContext } from '../core/types';
 import { getOrCreateProfile } from '../core/profile';
 
+function parseMentionId(arg: string): string | null {
+  if (!arg) return null;
+  const match = arg.match(/^<@!?([A-Za-z0-9_-]+)>$/);
+  return match ? match[1] : null;
+}
+
 export async function handleProfile(ctx: UnifiedContext, args: string[]) {
   try {
-    const scope = args[0]?.toLowerCase() === 'server' ? ctx.serverId : '0';
+    let targetUserId = ctx.authorId;
+    let targetUsername = ctx.authorName;
+    let scope = '0';
+
+    for (const arg of args) {
+      const lowerArg = arg.toLowerCase();
+      
+      if (lowerArg === 'server') {
+        scope = ctx.serverId;
+      } else {
+        const mentionedId = parseMentionId(arg);
+        if (mentionedId) {
+          targetUserId = mentionedId;
+          targetUsername = arg;
+        }
+      }
+    }
+
     const profileTypeLabel = scope === '0' ? 'Global' : 'Server';
 
     const profile = await getOrCreateProfile(
       ctx.platform,
-      ctx.authorId,
-      ctx.authorName,
+      targetUserId,
+      targetUsername,
       scope
     );
 
@@ -32,6 +55,6 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
     await ctx.reply(response);
   } catch (error) {
     console.error('Error to process profile command:', error);
-    await ctx.reply('❌ an error occurred while loading the profile.');
+    await ctx.reply('❌ An error occurred while loading the profile.');
   }
 }
