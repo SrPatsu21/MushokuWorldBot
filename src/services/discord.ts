@@ -1,6 +1,6 @@
 import { WebSocketManager } from '@discordjs/ws';
 import { REST } from '@discordjs/rest';
-import { API, GatewayDispatchEvents, GatewayIntentBits } from '@discordjs/core';
+import { API, Client, GatewayDispatchEvents, GatewayIntentBits } from '@discordjs/core';
 import { ENV } from '../config/env';
 import { getServerPrefix } from '../config/database';
 import { UnifiedContext } from '../core/types';
@@ -15,13 +15,17 @@ export const discordGateway = new WebSocketManager({
   rest,
 });
 
-// Event listener triggered upon successful gateway connection
-discordGateway.on(GatewayDispatchEvents.Ready, ({ data }) => {
-  console.log(`🟢 Discord WebSocket connected! Logged in as: ${data.user.username}`);
+const client = new Client({ rest, gateway: discordGateway });
+
+discordGateway.on('error', (error) => {
+  console.error('⚠️ Discord Gateway Error:', error);
 });
 
-// Main message handler mirroring the Revolt service structure
-discordGateway.on(GatewayDispatchEvents.MessageCreate, async ({ data: message }) => {
+client.on(GatewayDispatchEvents.Ready, ({ data }) => {
+  console.log(`🟢 Discord WebSocket connected! Logged in as: ${data.user.username} (ID: ${data.user.id})`);
+});
+
+client.on(GatewayDispatchEvents.MessageCreate, async ({ data: message }) => {
   if (message.author.bot || !message.guild_id) return;
 
   const serverId = `discord:${message.guild_id}`;
@@ -49,9 +53,11 @@ discordGateway.on(GatewayDispatchEvents.MessageCreate, async ({ data: message })
     mentionAuthor: () => `<@${message.author.id}>`,
   };
 
-  await dispatchCommand(ctx, command, args);
+  try {
+    await dispatchCommand(ctx, command, args);
+  } catch (err) {
+    console.error(`❌ Error dispatching command "${command}" on Discord:`, err);
+  }
 });
 
-discordGateway.on('error', (error) => {
-  console.error('⚠️ Discord Gateway Error:', error);
-});
+discordGateway.connect();

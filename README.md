@@ -14,8 +14,12 @@ touch \
 
 ## build
 
-´´´shell
+```shell
 DOCKER_BUILDKIT=1 docker compose build --no-cache
 docker compose up -d
 docker compose logs -f bot
-´´´
+```
+
+```shell
+docker compose up -d --build
+```

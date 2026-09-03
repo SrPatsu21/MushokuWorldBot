@@ -30,10 +30,14 @@ revoltBot.on('messageCreate', async (message) => {
     authorId: message.author._id,
     authorName: message.author.username,
     reply: async (content: string) => {
-      await message.channel?.sendMessage(content);
+      await message.reply(content, true);
     },
     mentionAuthor: () => `<@${message.author._id}>`,
   };
 
-  await dispatchCommand(ctx, command, args);
+  try {
+    await dispatchCommand(ctx, command, args);
+  } catch (err) {
+    console.error(`❌ Error dispatching command "${command}" in Revolt:`, err);
+  }
 });
