@@ -25,12 +25,16 @@ export async function initDatabase() {
 }
 
 export async function getServerPrefix(serverId: string): Promise<string> {
-  const server = await prisma.server.findUnique({
-    where: { id: serverId },
-  });
-  return server?.prefix || '!';
+  try {
+    const server = await prisma.server.findUnique({
+      where: { id: serverId },
+    });
+    return server?.prefix ?? '!';
+  } catch (error) {
+    console.error(`⚠️ Database query error in getServerPrefix for ${serverId}:`, error);
+    return '!';
+  }
 }
-
 export async function setServerPrefix(serverId: string, prefix: string): Promise<void> {
   await prisma.server.upsert({
     where: { id: serverId },

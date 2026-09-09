@@ -39,30 +39,35 @@ client.on(GatewayDispatchEvents.MessageCreate, async ({ data: message }) => {
 
   if (!command) return;
 
-  const ctx: UnifiedContext = {
-    platform: 'discord',
-    serverId,
-    channelId: message.channel_id,
-    authorId: message.author.id,
-    authorName: message.author.username,
-    reply: async (content: string) => {
-      await discordApi.channels.createMessage(message.channel_id, {
-        content,
-        message_reference: { message_id: message.id },
-      });
-    },
-    mentionAuthor: () => `<@${message.author.id}>`,
-    hasAdminPermission: async () => {
-      if (message.member?.permissions) {
-        const permissions = BigInt(message.member.permissions);
-        const ADMINISTRATOR = BigInt(1 << 3); // 0x8 or bit 3 (Administrator)
-        const MANAGE_GUILD = BigInt(1 << 5);  // 0x20 or bit 5 (Manage Server)
+const ctx: UnifiedContext = {
+  platform: 'discord',
+  serverId: message.guild_id || '0',
+  channelId: message.channel_id,
+  authorId: message.author.id,
+  authorName: message.author.username,
+  reply: async (content: string) => {
+    await discordApi.channels.createMessage(message.channel_id, {
+      content,
+      message_reference: { message_id: message.id },
+    });
+  },
+  mentionAuthor: () => `<@${message.author.id}>`,
+  
+  sendDM: async (content: string) => {
+    const dmChannel = await discordApi.users.createDM(message.author.id);
+    await discordApi.channels.createMessage(dmChannel.id, { content });
+  },
+  hasAdminPermission: async () => {
+    if (message.member?.permissions) {
+      const permissions = BigInt(message.member.permissions);
+      const ADMINISTRATOR = BigInt(1 << 3); // 0x8 or bit 3 (Administrator)
+      const MANAGE_GUILD = BigInt(1 << 5);  // 0x20 or bit 5 (Manage Server)
 
-        return (permissions & ADMINISTRATOR) === ADMINISTRATOR ||
-               (permissions & MANAGE_GUILD) === MANAGE_GUILD;
-      }
-      return false;
-    },
+      return (permissions & ADMINISTRATOR) === ADMINISTRATOR ||
+              (permissions & MANAGE_GUILD) === MANAGE_GUILD;
+    }
+    return false;
+},
   };
 
   try {

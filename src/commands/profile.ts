@@ -1,9 +1,15 @@
 import { UnifiedContext } from '../core/types';
-import { getOrCreateProfile } from '../core/profile';
+import { getOrCreateProfile, getProfileOnly } from '../core/profile';
 
+/**
+ * Clean and extract User ID from mention patterns:
+ * - Discord: <@123456789>, <@!123456789>
+ * - Revolt: <@01M08VFPC6ZQ0Z8NSVJK39RYRJ>
+ */
 function parseMentionId(arg: string): string | null {
   if (!arg) return null;
-  const match = arg.match(/^<@!?([A-Za-z0-9_-]+)>$/);
+  // Matches any mention starting with <@ or <@! and ending with >
+  const match = arg.trim().match(/^<@!?([A-Za-z0-9]+)>$/);
   return match ? match[1] : null;
 }
 
@@ -12,29 +18,53 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
     let targetUserId = ctx.authorId;
     let targetUsername = ctx.authorName;
     let scope = '0';
+    let isMentioned = false;
 
     for (const arg of args) {
       const lowerArg = arg.toLowerCase();
-      
+
       if (lowerArg === 'server') {
         scope = ctx.serverId;
-      } else {
-        const mentionedId = parseMentionId(arg);
-        if (mentionedId) {
-          targetUserId = mentionedId;
-          targetUsername = arg;
+        continue;
+      }
+
+      const mentionedId = parseMentionId(arg);
+      if (mentionedId) {
+        targetUserId = mentionedId;
+        isMentioned = true;
+
+        // Try to retrieve the mentioned user's name from context mentions
+        const mentionedUserInCtx = ctx.mentions?.find((m: any) => m.id === mentionedId);
+        if (mentionedUserInCtx?.username) {
+          targetUsername = mentionedUserInCtx.username;
+        } else {
+          targetUsername = `User (${mentionedId.slice(-4)})`;
         }
       }
     }
 
     const profileTypeLabel = scope === '0' ? 'Global' : 'Server';
 
-    const profile = await getOrCreateProfile(
-      ctx.platform,
-      targetUserId,
-      targetUsername,
-      scope
-    );
+    let profile;
+
+    if (isMentioned) {
+      // ONLY fetch profile when mentioning another user, DO NOT create one
+      profile = await getProfileOnly(ctx.platform, targetUserId, scope);
+
+      if (!profile) {
+        return await ctx.reply(
+          `❌ The user <@${targetUserId}> does not have a profile created yet!`
+        );
+      }
+    } else {
+      // Fetch or create profile for the command author
+      profile = await getOrCreateProfile(
+        ctx.platform,
+        targetUserId,
+        targetUsername,
+        scope
+      );
+    }
 
     const sw = profile.swordsman;
     const mg = profile.mage;
@@ -54,7 +84,7 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
 
     await ctx.reply(response);
   } catch (error) {
-    console.error('Error to process profile command:', error);
+    console.error('Error processing profile command:', error);
     await ctx.reply('❌ An error occurred while loading the profile.');
   }
 }
