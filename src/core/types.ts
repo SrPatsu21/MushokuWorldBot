@@ -5,8 +5,11 @@ export interface UnifiedContext {
   authorId: string;
   authorName: string;
   reply: (content: string) => Promise<void>;
+  sendDM?: (content: string) => Promise<void>;
   mentionAuthor: () => string;
-  hasAdminPermission: () => Promise<boolean>; // Método para checar admin
+  hasAdminPermission: () => Promise<boolean>;
+  mentions?: Array<{ id: string; username: string }>;
+  rawMessage?: any;
 }
 
 export type CommandHandler = (ctx: UnifiedContext, args: string[]) => Promise<void>;

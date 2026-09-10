@@ -1,4 +1,5 @@
 import { prisma } from '../config/database';
+import { getOrCreateProfile } from './profile';
 
 interface OTPRequest {
   fromPlatform: 'discord' | 'revolt';
@@ -74,33 +75,16 @@ export async function confirmLinkToken(
     };
   }
 
-  let sourceProfile = await prisma.userProfile.findFirst({
-    where: {
-      platform: request.fromPlatform,
-      platformUserId: request.fromUserId,
-      serverId: '0',
-    },
-  });
+  // Ensure source profile exists
+  const sourceProfile = await getOrCreateProfile(
+    request.fromPlatform,
+    request.fromUserId,
+    request.fromUsername,
+    '0'
+  );
 
-  if (!sourceProfile) {
-    sourceProfile = await prisma.userProfile.create({
-      data: {
-        platform: request.fromPlatform,
-        platformUserId: request.fromUserId,
-        serverId: '0',
-        username: request.fromUsername,
-        swordsman: { create: {} },
-        mage: { create: {} },
-      },
-    });
-  }
-
-  await prisma.userProfile.update({
-    where: { id: sourceProfile.id },
-    data: { linkedPlatformUserId: confirmingUserId },
-  });
-
-  await prisma.userProfile.upsert({
+  // Check if confirming user already has a separate profile on serverId = '0'
+  const confirmingLinkedAccount = await prisma.linkedAccount.findUnique({
     where: {
       platform_platformUserId_serverId: {
         platform: confirmingPlatform,
@@ -108,17 +92,46 @@ export async function confirmLinkToken(
         serverId: '0',
       },
     },
-    update: { linkedPlatformUserId: request.fromUserId },
-    create: {
-      platform: confirmingPlatform,
-      platformUserId: confirmingUserId,
-      linkedPlatformUserId: request.fromUserId,
-      serverId: '0',
-      username: confirmingUsername,
-      swordsman: { create: {} },
-      mage: { create: {} },
-    },
   });
+
+  if (confirmingLinkedAccount) {
+    if (confirmingLinkedAccount.profileId === sourceProfile.id) {
+      pendingTokens.delete(otp);
+      return {
+        success: false,
+        message: '⚠️ These accounts are already linked to the same profile!',
+      };
+    }
+
+    // Merge: Relink confirming account to sourceProfile and remove duplicate profile
+    const oldProfileId = confirmingLinkedAccount.profileId;
+
+    await prisma.linkedAccount.update({
+      where: { id: confirmingLinkedAccount.id },
+      data: { profileId: sourceProfile.id },
+    });
+
+    // Clean up empty old profile if no other accounts linked to it
+    const remainingInOld = await prisma.linkedAccount.count({
+      where: { profileId: oldProfileId },
+    });
+
+    if (remainingInOld === 0) {
+      await prisma.userProfile.delete({
+        where: { id: oldProfileId },
+      });
+    }
+  } else {
+    // Create new LinkedAccount attached directly to sourceProfile
+    await prisma.linkedAccount.create({
+      data: {
+        platform: confirmingPlatform,
+        platformUserId: confirmingUserId,
+        serverId: '0',
+        profileId: sourceProfile.id,
+      },
+    });
+  }
 
   pendingTokens.delete(otp);
 
@@ -132,36 +145,43 @@ export async function unlinkAccount(
   platform: 'discord' | 'revolt',
   userId: string
 ): Promise<{ success: boolean; message: string }> {
-  const profile = await prisma.userProfile.findFirst({
+  const linkedAccount = await prisma.linkedAccount.findUnique({
     where: {
-      serverId: '0',
-      OR: [
-        { platform, platformUserId: userId },
-        { linkedPlatformUserId: userId },
-      ],
+      platform_platformUserId_serverId: {
+        platform,
+        platformUserId: userId,
+        serverId: '0',
+      },
+    },
+    include: {
+      profile: {
+        include: {
+          linkedAccounts: true,
+        },
+      },
     },
   });
 
-  if (!profile || !profile.linkedPlatformUserId) {
+  if (!linkedAccount || linkedAccount.profile.linkedAccounts.length <= 1) {
     return {
       success: false,
       message: '❌ Your account is not currently linked to any other platform.',
     };
   }
 
-  const otherUserId = profile.linkedPlatformUserId;
-
-  await prisma.userProfile.updateMany({
-    where: {
-      serverId: '0',
-      OR: [
-        { platformUserId: userId },
-        { platformUserId: otherUserId },
-        { linkedPlatformUserId: userId },
-        { linkedPlatformUserId: otherUserId },
-      ],
+  // Create a new independent UserProfile for the unlinked account
+  const newProfile = await prisma.userProfile.create({
+    data: {
+      username: `${platform}_${userId.slice(-4)}`,
+      swordsman: { create: {} },
+      mage: { create: {} },
     },
-    data: { linkedPlatformUserId: null },
+  });
+
+  // Re-assign this LinkedAccount to the newly created profile
+  await prisma.linkedAccount.update({
+    where: { id: linkedAccount.id },
+    data: { profileId: newProfile.id },
   });
 
   return { success: true, message: '✅ Accounts successfully unlinked.' };

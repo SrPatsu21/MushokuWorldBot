@@ -27,19 +27,29 @@ model Server {
 }
 
 model UserProfile {
-  id                   Int             @id @default(autoincrement())
-  platform             String          // "discord" ou "revolt"
-  platformUserId       String          @map("platform_user_id")
-  linkedPlatformUserId String?         @map("linked_platform_user_id") // <-- ADICIONE ESTA LINHA
-  serverId             String          @default("0") @map("server_id") // "0" = Global
-  username             String
-  createdAt            DateTime        @default(now()) @map("created_at")
+  id        Int      @id @default(autoincrement())
+  username  String
+  createdAt DateTime @default(now()) @map("created_at")
 
-  swordsman            SwordsmanClass?
-  mage                 MageClass?
+  linkedAccounts LinkedAccount[]
+
+  swordsman SwordsmanClass?
+  mage      MageClass?
+
+  @@map("user_profiles")
+}
+
+model LinkedAccount {
+  id             Int         @id @default(autoincrement())
+  platform       String      // "discord" or "revolt"
+  platformUserId String      @map("platform_user_id")
+  serverId       String      @default("0") @map("server_id")
+
+  profileId      Int         @map("profile_id")
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([platform, platformUserId, serverId])
-  @@map("user_profiles")
+  @@map("linked_accounts")
 }
 
 model SwordsmanClass {
