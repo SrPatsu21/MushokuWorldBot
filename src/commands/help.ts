@@ -7,10 +7,21 @@ export async function handleHelp(ctx: UnifiedContext) {
   const response = [
     `📜 **Help Center - Mushoku World Bot**`,
     ``,
-    `• \`${prefix}help\` - Show command list.`,
-    `• \`${prefix}profile [@user] [server]\` - Show your profile or another user's info.`,
+    `**👤 Profile & Utility**`,
+    `• \`${prefix}profile [@user] [server]\` - Show your profile, vital stats, active actions, and status.`,
     `• \`${prefix}link [confirm | unlink]\` - Safely connect or disconnect your Discord and Stoat/Revolt accounts.`,
     `• \`${prefix}setprefix <new prefix>\` - Change commands prefix for this server.`,
+    ``,
+    `**🏋️ Progression & Actions**`,
+    `• \`${prefix}train <swordsmanship 0-100> <magic 0-100> <duration_min>\` - Train to earn Stamina/Mana XP. Every 1000 XP automatically increases your Max Stats!`,
+    ``,
+    `**👥 Party System**`,
+    `• \`${prefix}party create <name>\` - Create a new party.`,
+    `• \`${prefix}party join <name>\` - Join an existing party.`,
+    `• \`${prefix}party leave\` - Leave your current party.`,
+    `• \`${prefix}party info\` - Show details about your party.`,
+    ``,
+    `💡 *Note: If a quest fails and your character dies, you will be locked in recovery for 12 hours before reviving with 1 HP.*`,
   ].join('\n');
 
   await ctx.reply(response);

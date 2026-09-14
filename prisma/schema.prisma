@@ -7,7 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Ranks de Habilidade no universo Mushoku Tensei
 enum SkillRank {
   NONE
   BEGINNER
@@ -19,8 +18,25 @@ enum SkillRank {
   GOD
 }
 
+enum AdventurerRank {
+  F
+  E
+  D
+  C
+  B
+  A
+  S
+}
+
+enum ActionType {
+  TRAINING
+  TRAVEL
+  QUEST
+  REST
+}
+
 model Server {
-  id     String @id @map("server_id") // Ex: "discord:123456" ou "revolt:789"
+  id     String @id @map("server_id")
   prefix String @default("!")
 
   @@map("servers")
@@ -33,20 +49,77 @@ model UserProfile {
 
   linkedAccounts LinkedAccount[]
 
+  // Status Vitais
+  currentHp Int @default(500) @map("current_hp")
+  maxHp     Int @default(500) @map("max_hp")
+
+  currentStamina Int    @default(100) @map("current_stamina")
+  maxStamina     Int    @default(100) @map("max_stamina")
+  staminaXp      Int @default(0) @map("stamina_xp")
+
+  currentMana Int    @default(1000) @map("current_mana")
+  maxMana     Int    @default(1000) @map("max_mana")
+  manaXp      Int @default(0) @map("mana_xp")
+
+  lastRegenUpdate DateTime @default(now()) @map("last_regen_update")
+
+  adventurerRank AdventurerRank @default(F) @map("adventurer_rank")
+
+  clearedF Int @default(0) @map("cleared_adventurer_lower")
+  clearedE Int @default(0) @map("cleared_adventurer_current")
+
+  consecutiveFailuresLower   Int @default(0) @map("consecutive_failures_lower")
+  consecutiveFailuresCurrent Int @default(0) @map("consecutive_failures_current")
+
+  currentAction UserAction?
+
   swordsman SwordsmanClass?
   mage      MageClass?
+
+  partyId    Int?   @map("party_id")
+  party      Party? @relation("PartyMembers", fields: [partyId], references: [id], onDelete: SetNull)
+  partyRoles Int    @default(0) @map("party_roles")
+
+  ledParty Party? @relation("PartyLeader")
 
   @@map("user_profiles")
 }
 
+model UserAction {
+  id        Int         @id @default(autoincrement())
+  profileId Int         @unique @map("profile_id")
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  type      ActionType
+  startedAt DateTime   @default(now()) @map("started_at")
+  duration  Int        // em segundos
+
+  data Json?
+
+  @@map("user_actions")
+}
+
+model Party {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  leaderId Int         @unique @map("leader_id")
+  leader   UserProfile @relation("PartyLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+
+  members UserProfile[] @relation("PartyMembers")
+
+  @@map("parties")
+}
+
 model LinkedAccount {
   id             Int         @id @default(autoincrement())
-  platform       String      // "discord" or "revolt"
+  platform       String
   platformUserId String      @map("platform_user_id")
   serverId       String      @default("0") @map("server_id")
 
-  profileId      Int         @map("profile_id")
-  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId Int         @map("profile_id")
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([platform, platformUserId, serverId])
   @@map("linked_accounts")
@@ -57,27 +130,26 @@ model SwordsmanClass {
   profileId Int         @unique @map("profile_id")
   profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-  swordGod  SkillRank   @default(NONE) @map("sword_god")
-  northGod  SkillRank   @default(NONE) @map("north_god")
-  waterGod  SkillRank   @default(NONE) @map("water_god")
+  swordGod SkillRank @default(NONE) @map("sword_god")
+  northGod SkillRank @default(NONE) @map("north_god")
+  waterGod SkillRank @default(NONE) @map("water_god")
 
   @@map("swordsman_classes")
 }
 
 model MageClass {
-  id             Int         @id @default(autoincrement())
-  profileId      Int         @unique @map("profile_id")
-  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id        Int         @id @default(autoincrement())
+  profileId Int         @unique @map("profile_id")
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-  fire           SkillRank   @default(NONE)
-  water          SkillRank   @default(NONE)
-  wind           SkillRank   @default(NONE)
-  earth          SkillRank   @default(NONE)
-
-  healing        SkillRank   @default(NONE)
-  detoxification SkillRank   @default(NONE)
-  protection     SkillRank   @default(NONE)
-  summoning      SkillRank   @default(NONE)
+  fire           SkillRank @default(NONE)
+  water          SkillRank @default(NONE)
+  wind           SkillRank @default(NONE)
+  earth          SkillRank @default(NONE)
+  healing        SkillRank @default(NONE)
+  detoxification SkillRank @default(NONE)
+  protection     SkillRank @default(NONE)
+  summoning      SkillRank @default(NONE)
 
   @@map("mage_classes")
 }

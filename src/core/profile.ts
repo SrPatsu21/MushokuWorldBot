@@ -1,5 +1,6 @@
 import { prisma } from '../config/database';
 import { SkillRank } from '@prisma/client';
+import { syncProfileState } from './actionEngine';
 
 /**
  * Fetch profile without creating a new record.
@@ -9,10 +10,6 @@ export async function getProfileOnly(
   platformUserId: string,
   serverId: string = '0'
 ) {
-  if (!platformUserId) {
-    throw new Error('platformUserId is required to fetch profile.');
-  }
-
   const safeServerId = serverId || '0';
 
   const linkedAccount = await prisma.linkedAccount.findUnique({
@@ -23,18 +20,11 @@ export async function getProfileOnly(
         serverId: safeServerId,
       },
     },
-    include: {
-      profile: {
-        include: {
-          swordsman: true,
-          mage: true,
-          linkedAccounts: true,
-        },
-      },
-    },
   });
 
-  return linkedAccount ? linkedAccount.profile : null;
+  if (!linkedAccount) return null;
+
+  return await syncProfileState(linkedAccount.profileId);
 }
 
 /**
@@ -71,14 +61,9 @@ export async function getOrCreateProfile(
         },
       },
     },
-    include: {
-      swordsman: true,
-      mage: true,
-      linkedAccounts: true,
-    },
   });
 
-  return newProfile;
+  return await syncProfileState(newProfile.id);
 }
 
 /**

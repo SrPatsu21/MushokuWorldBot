@@ -1,14 +1,8 @@
 import { UnifiedContext } from '../core/types';
 import { getOrCreateProfile, getProfileOnly } from '../core/profile';
 
-/**
- * Clean and extract User ID from mention patterns:
- * - Discord: <@123456789>, <@!123456789>
- * - Revolt: <@01M08VFPC6ZQ0Z8NSVJK39RYRJ>
- */
 function parseMentionId(arg: string): string | null {
   if (!arg) return null;
-  // Matches any mention starting with <@ or <@! and ending with >
   const match = arg.trim().match(/^<@!?([A-Za-z0-9]+)>$/);
   return match ? match[1] : null;
 }
@@ -33,7 +27,6 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
         targetUserId = mentionedId;
         isMentioned = true;
 
-        // Try to retrieve the mentioned user's name from context mentions
         const mentionedUserInCtx = ctx.mentions?.find((m: any) => m.id === mentionedId);
         if (mentionedUserInCtx?.username) {
           targetUsername = mentionedUserInCtx.username;
@@ -44,11 +37,9 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
     }
 
     const profileTypeLabel = scope === '0' ? 'Global' : 'Server';
-
     let profile;
 
     if (isMentioned) {
-      // ONLY fetch profile when mentioning another user, DO NOT create one
       profile = await getProfileOnly(ctx.platform, targetUserId, scope);
 
       if (!profile) {
@@ -57,7 +48,6 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
         );
       }
     } else {
-      // Fetch or create profile for the command author
       profile = await getOrCreateProfile(
         ctx.platform,
         targetUserId,
@@ -71,6 +61,33 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
 
     let response = `📜 **Profile of ${profile.username} (${profileTypeLabel})**\n\n`;
 
+    // Status Vitais
+    response += `❤️ **HP:** \`${profile.currentHp}/${profile.maxHp}\`\n`;
+    response += `⚡ **Stamina:** \`${profile.currentStamina}/${profile.maxStamina}\` *(XP: ${profile.staminaXp})*\n`;
+    response += `🧪 **Mana:** \`${profile.currentMana}/${profile.maxMana}\` *(XP: ${profile.manaXp})*\n\n`;
+
+    // Aventureiro & Party
+    const partyName = profile.party ? profile.party.name : 'None';
+    response += `🛡️ **Adventurer Rank:** \`${profile.adventurerRank}\`\n`;
+    response += `👥 **Party:** \`${partyName}\`\n\n`;
+
+    if (profile.currentAction) {
+      const action = profile.currentAction;
+      const actionData = (action.data as any) || {};
+
+      const endsAt = new Date(action.startedAt).getTime() + action.duration * 1000;
+      const remainingMinutes = Math.max(1, Math.ceil((endsAt - Date.now()) / 60000));
+
+      if (action.type === 'REST' && actionData.isDeathRecovery) {
+        response += `💀 **Status:** **DEAD** (Revives in ${remainingMinutes} min)\n\n`;
+      } else {
+        response += `⏳ **Active Action:** \`${action.type}\` (${remainingMinutes} min remaining)\n\n`;
+      }
+    } else {
+      response += `🟢 **Status:** Idle / Ready for action\n\n`;
+    }
+
+    // Classes & Ranks
     response += `⚔️ **Swordsmanship:**\n`;
     response += `• Sword God: \`${sw?.swordGod || 'NONE'}\`\n`;
     response += `• North God: \`${sw?.northGod || 'NONE'}\`\n`;
