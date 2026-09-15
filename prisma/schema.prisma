@@ -49,16 +49,15 @@ model UserProfile {
 
   linkedAccounts LinkedAccount[]
 
-  // Status Vitais
   currentHp Int @default(500) @map("current_hp")
   maxHp     Int @default(500) @map("max_hp")
 
-  currentStamina Int    @default(100) @map("current_stamina")
-  maxStamina     Int    @default(100) @map("max_stamina")
+  currentStamina Int @default(100) @map("current_stamina")
+  maxStamina     Int @default(100) @map("max_stamina")
   staminaXp      Int @default(0) @map("stamina_xp")
 
-  currentMana Int    @default(1000) @map("current_mana")
-  maxMana     Int    @default(1000) @map("max_mana")
+  currentMana Int @default(1000) @map("current_mana")
+  maxMana     Int @default(1000) @map("max_mana")
   manaXp      Int @default(0) @map("mana_xp")
 
   lastRegenUpdate DateTime @default(now()) @map("last_regen_update")
@@ -92,7 +91,7 @@ model UserAction {
 
   type      ActionType
   startedAt DateTime   @default(now()) @map("started_at")
-  duration  Int        // em segundos
+  duration  Int
 
   data Json?
 
@@ -113,10 +112,10 @@ model Party {
 }
 
 model LinkedAccount {
-  id             Int         @id @default(autoincrement())
+  id             Int    @id @default(autoincrement())
   platform       String
-  platformUserId String      @map("platform_user_id")
-  serverId       String      @default("0") @map("server_id")
+  platformUserId String @map("platform_user_id")
+  serverId       String @default("0") @map("server_id")
 
   profileId Int         @map("profile_id")
   profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
