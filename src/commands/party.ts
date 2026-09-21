@@ -2,6 +2,10 @@ import { UnifiedContext } from '../core/types';
 import { getProfileOnly } from '../core/profile';
 import { prisma, getServerPrefix } from '../config/database';
 import { PartyRoleBit, addRole, removeRole, hasRole, getRoleNames } from '../core/partyRoles';
+import { calculateTotalTravelDistance, calculateTravelTimeMinutes } from '../core/quest';
+import { syncProfileState, triggerPlayerDeath } from '../core/actionEngine';
+import { ActionType } from '@prisma/client';
+import { ActionType, BoardQuestStatus } from '@prisma/client';
 
 const RANK_ORDER: Record<string, number> = {
   F: 1, E: 2, D: 3, C: 4, B: 5, A: 6, S: 7, SSS: 8
@@ -70,6 +74,8 @@ export async function handleParty(ctx: UnifiedContext, args: string[]) {
         return await transferLeadership(ctx, profile, cleanArgs[1], scope);
       case 'info':
         return await showPartyInfo(ctx, profile, cleanArgs.slice(1).join(' '));
+      case 'acceptquest':
+        return await acceptQuest(ctx, profile, cleanArgs[1]);
       default:
         return await ctx.reply(
           `**👥 Party System**\n` +
@@ -77,6 +83,7 @@ export async function handleParty(ctx: UnifiedContext, args: string[]) {
           `• \`${prefix}party invite <@user>\` - Send a party invite (Leader only).\n` +
           `• \`${prefix}party accept [party_name]\` - Accept a pending party invite.\n` +
           `• \`${prefix}party decline [party_name]\` - Decline a pending party invite.\n` +
+          `• \`${prefix}party acceptquest <quest_id>\` - Accept an available quest for your party (Leader only).\n` +
           `• \`${prefix}party kick <@user>\` - Kick a member (Leader only).\n` +
           `• \`${prefix}party leave\` - Leave your current party (Disbands if Leader).\n` +
           `• \`${prefix}party role <add/remove> <@user> <role>\` - Manage member roles (Leader only).\n` +
@@ -179,7 +186,7 @@ async function acceptInvite(ctx: UnifiedContext, profile: any, partyNameInput?: 
   }
 
   if (userInvites.length > 1 && (!partyNameInput || partyNameInput.trim().length === 0)) {
-    const list = userInvites.map((i) => `• **${i.partyName}** (Invited by ${i.invitedBy})`).join('\n');
+    const list = userInvites.map((i) => `• **${i.partyName}** (Invited by${i.invitedBy})`).join('\n');
     return await ctx.reply(
       `⚠️ You have multiple pending invites! Please specify the party name:\n${list}\n\n` +
       `Example: \`!party accept ${userInvites[0].partyName}\``
@@ -218,7 +225,6 @@ async function acceptInvite(ctx: UnifiedContext, profile: any, partyNameInput?: 
     },
   });
 
-  // Limpa todos os convites pendentes pois o jogador agora está em uma party
   pendingInvites.delete(profile.id);
 
   return await ctx.reply(`🤝 You have joined **${party.name}**!`);
@@ -417,6 +423,152 @@ async function showPartyInfo(ctx: UnifiedContext, profile: any, searchQuery?: st
     `👥 **Party: ${party.name}** (${party.members.length}/7)\n` +
     `${memberList}`
   );
+}
+
+async function acceptQuest(ctx: UnifiedContext, profile: any, questIdInput: string) {
+  if (!profile.partyId) {
+    return await ctx.reply('❌ You are not in a party.');
+  }
+
+  const isLeader = hasRole(profile.partyRoles, PartyRoleBit.LEADER);
+  if (!isLeader) {
+    return await ctx.reply('❌ Only the Party Leader can accept quests for the party.');
+  }
+
+  const questId = parseInt(questIdInput, 10);
+  if (isNaN(questId)) {
+    return await ctx.reply('❌ Please provide a valid quest ID! Example: `!party acceptquest 1`');
+  }
+
+  const quest = await prisma.boardQuest.findUnique({
+    where: { id: questId },
+    include: { board: true },
+  });
+
+  if (!quest || quest.status !== 'AVAILABLE' || quest.isNull) {
+    return await ctx.reply('❌ Quest not found or no longer available.');
+  }
+
+  const party = await prisma.party.findUnique({
+    where: { id: profile.partyId },
+    include: { members: { include: { currentAction: true } } },
+  });
+
+  if (!party) {
+    return await ctx.reply('❌ Party not found.');
+  }
+
+  const busyMembers: string[] = [];
+  const updatedMembers = [];
+
+  for (const member of party.members) {
+    const synced = await syncProfileState(member.id);
+    if (synced?.currentAction) {
+      busyMembers.push(synced.username);
+    }
+    if (synced) {
+      updatedMembers.push(synced);
+    }
+  }
+
+  if (busyMembers.length > 0) {
+    return await ctx.reply(
+      `❌ Cannot start quest! The following member(s) are currently busy:\n` +
+      `• ${busyMembers.join(', ')}`
+    );
+  }
+
+  const boardPos = { x: quest.board.positionX, y: quest.board.positionY };
+  const questGlobalPos = { x: quest.globalPositionX, y: quest.globalPositionY };
+
+  let maxTotalDistance = 0;
+  let maxTravelToBoard = 0;
+  let maxTravelToQuest = 0;
+
+  for (const member of updatedMembers) {
+    const userPos = { x: member.positionX, y: member.positionY };
+    const { travelToBoard, travelToQuest, totalDistance } = calculateTotalTravelDistance(
+      userPos,
+      boardPos,
+      questGlobalPos
+    );
+
+    if (totalDistance > maxTotalDistance) {
+      maxTotalDistance = totalDistance;
+      maxTravelToBoard = travelToBoard;
+      maxTravelToQuest = travelToQuest;
+    }
+  }
+
+  const roundTripDistance = maxTotalDistance + maxTravelToQuest;
+  const roundTripTravelTimeMinutes = calculateTravelTimeMinutes(roundTripDistance);
+
+  const totalDurationMinutes = roundTripTravelTimeMinutes + quest.durationMinutes;
+  const totalDurationSeconds = totalDurationMinutes * 60;
+
+  const travelToQuestMinutes = calculateTravelTimeMinutes(maxTotalDistance);
+  const timeToReachQuestLocationSeconds = travelToQuestMinutes * 60;
+
+  await prisma.boardQuest.update({
+    where: { id: quest.id },
+    data: { status: BoardQuestStatus.IN_PROGRESS },
+  });
+
+  const startTime = new Date();
+  for (const member of updatedMembers) {
+    await prisma.userAction.create({
+      data: {
+        profileId: member.id,
+        type: ActionType.QUEST,
+        duration: totalDurationSeconds,
+        startedAt: startTime,
+        data: {
+          questId: quest.id,
+          partyId: party.id,
+          targetPositionX: quest.globalPositionX,
+          targetPositionY: quest.globalPositionY,
+          returnBoardPositionX: quest.board.positionX,
+          returnBoardPositionY: quest.board.positionY,
+          timeToReachQuestLocationSeconds,
+          questDurationMinutes: quest.durationMinutes,
+        },
+      },
+    });
+  }
+
+  return await ctx.reply(
+    `⚔️ **Quest Accepted by ${party.name}!**\n` +
+    `📜 **Quest:** ${quest.title} (Rank${quest.rank})\n` +
+    `📍 **Target Location:** (${quest.globalPositionX},${quest.globalPositionY})\n` +
+    `🏃 **Max Distance:** \`${maxTotalDistance} blocks\` (Based on furthest member)\n` +
+    `⏱️ **Estimated Travel Time:** \`~${roundTripTravelTimeMinutes}m\` (Round Trip)\n` +
+    `⏳ **Quest Duration:** \`${quest.durationMinutes}m\`\n` +
+    `🕒 **Total Execution Time:** \`${totalDurationMinutes} minutes\``
+  );
+}
+
+export function calculateQuestXpDistribution(partyRolesMask: number, totalXp: number): { staminaXp: number; manaXp: number } {
+  const isAny = hasRole(partyRolesMask, PartyRoleBit.SCOUT) || hasRole(partyRolesMask, PartyRoleBit.TANK) || hasRole(partyRolesMask, PartyRoleBit.SUBTANK) || hasRole(partyRolesMask, PartyRoleBit.ATTACKER);
+  if (isAny) {
+    return { staminaXp: totalXp, manaXp: totalXp };
+  }
+
+  const isHealer = hasRole(partyRolesMask, PartyRoleBit.HEALER);
+  const isStaminaClass = hasRole(partyRolesMask, PartyRoleBit.ARCHER) || hasRole(partyRolesMask, PartyRoleBit.THIEF);
+
+  if (isHealer && isStaminaClass) {
+    return { staminaXp: totalXp, manaXp: totalXp };
+  }
+
+  if (isHealer) {
+    return { staminaXp: 0, manaXp: totalXp };
+  }
+
+  if (isStaminaClass) {
+    return { staminaXp: totalXp, manaXp: 0 };
+  }
+
+  return { staminaXp: totalXp, manaXp: totalXp };
 }
 
 export async function checkPartyAvailabilityForQuest(partyId: number): Promise<boolean> {

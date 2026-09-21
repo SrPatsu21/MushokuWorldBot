@@ -1,6 +1,8 @@
 import { prisma } from '../config/database';
 import { ActionType } from '@prisma/client';
 import { processXPProgression } from './stats';
+import { calculateQuestXpDistribution } from '../commands/party';
+import { ActionType, BoardQuestStatus } from '@prisma/client';
 
 const REGEN_HP_PER_MIN = 5;
 const REGEN_STAMINA_PER_MIN = 20;
@@ -46,6 +48,9 @@ export async function syncProfileState(profileId: number) {
   let currentMana = profile.currentMana;
   let maxMana = profile.maxMana;
   let manaXp = profile.manaXp;
+
+  let positionX = profile.positionX;
+  let positionY = profile.positionY;
 
   let action = profile.currentAction;
   let lastRegenUpdate = new Date(profile.lastRegenUpdate);
@@ -110,6 +115,54 @@ export async function syncProfileState(profileId: number) {
         });
       }
     }
+
+    else if (action.type === ActionType.QUEST) {
+      const elapsedSeconds = Math.floor((now.getTime() - actionStartTime) / 1000);
+      const timeToReachLocation = actionData.timeToReachQuestLocationSeconds || 0;
+
+      if (elapsedSeconds >= timeToReachLocation) {
+        const questFailed = false;
+
+        if (questFailed) {
+          await triggerPlayerDeath(profileId, 'Killed during quest');
+          return await prisma.userProfile.findUnique({
+            where: { id: profileId },
+            include: { swordsman: true, mage: true, currentAction: true, party: true },
+          });
+        }
+      }
+
+      if (isActionCompleted) {
+        const quest = await prisma.boardQuest.findUnique({
+          where: { id: actionData.questId },
+        });
+
+        if (quest) {
+          const totalQuestXp = quest.rewardXp || 100;
+
+          // Aplica a regra de distribuição de XP conforme a role
+          const { staminaXp: sXp, manaXp: mXp } = calculateQuestXpDistribution(
+            profile.partyRoles,
+            totalQuestXp
+          );
+
+          staminaXp += sXp;
+          manaXp += mXp;
+
+          positionX = actionData.returnBoardPositionX;
+          positionY = actionData.returnBoardPositionY;
+
+          await prisma.boardQuest.update({
+            where: { id: quest.id },
+            data: { status: BoardQuestStatus.COMPLETED },
+          });
+        }
+
+        await prisma.userAction.delete({ where: { id: action.id } });
+        lastRegenUpdate = new Date(actionEndTime);
+        action = null;
+      }
+    }
   }
 
   const updatedStats = processXPProgression({
@@ -152,6 +205,8 @@ export async function syncProfileState(profileId: number) {
       currentMana,
       maxMana,
       manaXp,
+      positionX,
+      positionY,
       lastRegenUpdate,
     },
   });

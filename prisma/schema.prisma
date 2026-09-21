@@ -160,8 +160,10 @@ model MageClass {
 
 enum BoardQuestStatus {
   AVAILABLE
-  TAKEN
+  IN_PROGRESS
+  COMPLETED
   EXPIRED
+  FAILED
 }
 
 model QuestBoard {
