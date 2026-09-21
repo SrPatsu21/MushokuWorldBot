@@ -5,10 +5,10 @@ import { calculateQuestXpDistribution } from '../commands/party';
 import { ActionType, BoardQuestStatus } from '@prisma/client';
 
 const REGEN_HP_PER_MIN = 5;
-const REGEN_STAMINA_PER_MIN = 20;
+const REGEN_STAMINA_PER_MIN = 10;
 const REGEN_MANA_PER_MIN = 5;
 
-export const DEATH_PENALTY_SECONDS = 12 * 60 * 60; // 12 horas
+export const DEATH_PENALTY_SECONDS = 12 * 60 * 60; // 12 h
 
 export async function triggerPlayerDeath(profileId: number, reason: string = 'Quest Failed') {
   await prisma.userAction.deleteMany({ where: { profileId } });
@@ -140,7 +140,6 @@ export async function syncProfileState(profileId: number) {
         if (quest) {
           const totalQuestXp = quest.rewardXp || 100;
 
-          // Aplica a regra de distribuição de XP conforme a role
           const { staminaXp: sXp, manaXp: mXp } = calculateQuestXpDistribution(
             profile.partyRoles,
             totalQuestXp
@@ -186,9 +185,9 @@ export async function syncProfileState(profileId: number) {
       const elapsedMinutes = Math.floor(elapsedSeconds / 60);
 
       if (elapsedMinutes > 0) {
-        currentHp = Math.min(maxHp, currentHp + elapsedMinutes * REGEN_HP_PER_MIN);
-        currentStamina = Math.min(maxStamina, currentStamina + elapsedMinutes * REGEN_STAMINA_PER_MIN);
-        currentMana = Math.min(maxMana, currentMana + elapsedMinutes * REGEN_MANA_PER_MIN);
+        currentHp = Math.min(maxHp, currentHp + elapsedMinutes * (REGEN_HP_PER_MIN + (0.002*maxHp)));
+        currentStamina = Math.min(maxStamina, currentStamina + elapsedMinutes * (REGEN_STAMINA_PER_MIN + (0.003*maxStamina)));
+        currentMana = Math.min(maxMana, currentMana + elapsedMinutes * (REGEN_MANA_PER_MIN + (0.002*maxStamina)));
         lastRegenUpdate = now;
       }
     }

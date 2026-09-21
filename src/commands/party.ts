@@ -568,7 +568,7 @@ export function calculateQuestXpDistribution(partyRolesMask: number, totalXp: nu
     return { staminaXp: totalXp, manaXp: 0 };
   }
 
-  return { staminaXp: totalXp, manaXp: totalXp };
+  return { staminaXp: 0, manaXp: 0 };
 }
 
 export async function checkPartyAvailabilityForQuest(partyId: number): Promise<boolean> {
