@@ -1,0 +1,56 @@
+[
+  {
+    "id": "millis_silver_coins",
+    "name": "Millis Silver Coins",
+    "type": "CURRENCY",
+    "value": 1
+  },
+  {
+    "id": "iron_sword",
+    "name": "Iron Sword",
+    "type": "WEAPON",
+    "slotType": "HAND",
+    "value": 15,
+    "stats": {
+      "attack": 8,
+      "magicAttack": 0,
+      "defense": 1,
+      "magicDefense": 0
+    }
+  },
+  {
+    "id": "leather_armor",
+    "name": "Leather Armor",
+    "type": "ARMOR",
+    "slotType": "CLOTHING",
+    "value": 20,
+    "stats": {
+      "defense": 5,
+      "magicDefense": 2
+    }
+  },
+  {
+    "id": "speed_boots",
+    "name": "Speed Boots",
+    "type": "ARMOR",
+    "slotType": "BOOTS",
+    "value": 12,
+    "stats": {
+      "defense": 2,
+      "magicDefense": 1
+    }
+  },
+  {
+    "id": "magic_talisman",
+    "name": "Talisman of Wisdom",
+    "type": "TALISMAN",
+    "slotType": "TALISMAN",
+    "value": 30,
+    "stats": {
+      "attack": 0,
+      "magicAttack": 12,
+      "defense": 0,
+      "magicDefense": 5
+    }
+  }
+]

@@ -1,5 +1,6 @@
 import { UnifiedContext } from '../core/types';
 import { getOrCreateProfile, getProfileOnly } from '../core/profile';
+import { getItemDefinition, calculateEquipmentStats, getPlayerCoins } from '../core/inventory';
 
 function parseMentionId(arg: string): string | null {
   if (!arg) return null;
@@ -59,13 +60,29 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
     const sw = profile.swordsman;
     const mg = profile.mage;
 
+    const bonusStats = calculateEquipmentStats(profile);
+    const coins = await getPlayerCoins(profile.id);
+
     let response = `📜 **Profile of ${profile.username} (${profileTypeLabel})**\n\n`;
 
     // Vital Stats & Location
     response += `❤️ **HP:** \`${profile.currentHp}/${profile.maxHp}\`\n`;
     response += `⚡ **Stamina:** \`${profile.currentStamina}/${profile.maxStamina}\` *(XP: ${profile.staminaXp})*\n`;
     response += `🧪 **Mana:** \`${profile.currentMana}/${profile.maxMana}\` *(XP: ${profile.manaXp})*\n`;
+    response += `🪙 **Coins:** \`${coins} Millis Silver Coins\`\n`;
     response += `📍 **Location:** \`(${profile.positionX},${profile.positionY})\`\n\n`;
+
+    // Equipments & Equipment Bonus Stats
+    const formatEquip = (id: string | null) => (id ? `**${getItemDefinition(id)?.name || id}**` : '*None*');
+
+    response += `🛡️ **Equipped Items:**\n`;
+    response += `• 👔 Clothing: ${formatEquip(profile.clothingItemId)}\n`;
+    response += `• 👢 Boots: ${formatEquip(profile.bootsItemId)} | 🧤 Gloves: ${formatEquip(profile.glovesItemId)}\n`;
+    response += `• 🗡️ Right Hand: ${formatEquip(profile.rightHandItemId)} | 🛡️ Left Hand: ${formatEquip(profile.leftHandItemId)}\n`;
+    response += `• 📿 Talismans: ${formatEquip(profile.talisman1ItemId)} | ${formatEquip(profile.talisman2ItemId)} | ${formatEquip(profile.talisman3ItemId)} | ${formatEquip(profile.talisman4ItemId)}\n\n`;
+
+    response += `📊 **Gear Combat Bonus:**\n`;
+    response += `• ATK: \`+${bonusStats.attack}\` | MATK: \`+${bonusStats.magicAttack}\` | DEF: \`+${bonusStats.defense}\` | MDEF: \`+${bonusStats.magicDefense}\`\n\n`;
 
     // Adventurer & Party Info
     const partyName = profile.party ? profile.party.name : 'None';

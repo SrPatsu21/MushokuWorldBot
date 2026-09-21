@@ -35,6 +35,18 @@ enum ActionType {
   REST
 }
 
+enum EquipmentSlot {
+  CLOTHING
+  BOOTS
+  GLOVES
+  RIGHT_HAND
+  LEFT_HAND
+  TALISMAN_1
+  TALISMAN_2
+  TALISMAN_3
+  TALISMAN_4
+}
+
 model Server {
   id     String @id @map("server_id")
   prefix String @default("!")
@@ -76,6 +88,17 @@ model UserProfile {
 
   currentAction UserAction?
 
+  clothingItemId   String?
+  bootsItemId      String?
+  glovesItemId     String?
+  rightHandItemId  String?
+  leftHandItemId   String?
+  talisman1ItemId  String?
+  talisman2ItemId  String?
+  talisman3ItemId  String?
+  talisman4ItemId  String?
+  inventory        InventoryItem[]
+
   swordsman SwordsmanClass?
   mage      MageClass?
 
@@ -114,6 +137,19 @@ model Party {
   boardQuests BoardQuest[]
 
   @@map("parties")
+}
+
+model InventoryItem {
+  id        Int         @id @default(autoincrement())
+  profileId Int
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  itemId    String      // ID que bate com o itens.json (ex: "millis_silver_coins", "iron_sword")
+  amount    Int         @default(1)
+  slotIndex Int?        // 0 a 19 para itens gerais. Null se for moeda ("millis_silver_coins")
+
+  @@unique([profileId, slotIndex])
+  @@index([profileId])
 }
 
 model LinkedAccount {
