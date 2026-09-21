@@ -61,12 +61,13 @@ export async function handleProfile(ctx: UnifiedContext, args: string[]) {
 
     let response = `📜 **Profile of ${profile.username} (${profileTypeLabel})**\n\n`;
 
-    // Status Vitais
+    // Vital Stats & Location
     response += `❤️ **HP:** \`${profile.currentHp}/${profile.maxHp}\`\n`;
     response += `⚡ **Stamina:** \`${profile.currentStamina}/${profile.maxStamina}\` *(XP: ${profile.staminaXp})*\n`;
-    response += `🧪 **Mana:** \`${profile.currentMana}/${profile.maxMana}\` *(XP: ${profile.manaXp})*\n\n`;
+    response += `🧪 **Mana:** \`${profile.currentMana}/${profile.maxMana}\` *(XP: ${profile.manaXp})*\n`;
+    response += `📍 **Location:** \`(${profile.positionX},${profile.positionY})\`\n\n`;
 
-    // Aventureiro & Party
+    // Adventurer & Party Info
     const partyName = profile.party ? profile.party.name : 'None';
     response += `🛡️ **Adventurer Rank:** \`${profile.adventurerRank}\`\n`;
     response += `👥 **Party:** \`${partyName}\`\n\n`;

@@ -47,10 +47,11 @@ export async function getOrCreateProfile(
     return existingProfile;
   }
 
-  // Create new UserProfile and LinkedAccount in a single step
   const newProfile = await prisma.userProfile.create({
     data: {
       username,
+      positionX: 0,
+      positionY: 0,
       swordsman: { create: {} },
       mage: { create: {} },
       linkedAccounts: {
@@ -64,6 +65,19 @@ export async function getOrCreateProfile(
   });
 
   return await syncProfileState(newProfile.id);
+}
+
+/**
+ * Update character position coordinates.
+ */
+export async function updateProfilePosition(profileId: number, x: number, y: number) {
+  return await prisma.userProfile.update({
+    where: { id: profileId },
+    data: {
+      positionX: x,
+      positionY: y,
+    },
+  });
 }
 
 /**

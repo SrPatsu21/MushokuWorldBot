@@ -5,10 +5,10 @@ import { handleProfile } from '../commands/profile';
 import { handleLink } from '../commands/link';
 import { handleTrain } from '../commands/train';
 import { handleParty } from '../commands/party';
+import { handleQuest } from '../commands/quest';
 
-type CommandFunction = (ctx: UnifiedContext, args: string[]) => Promise<void>;
+type CommandFunction = (ctx: UnifiedContext, args: string[]) => Promise<unknown>;
 
-// Command map registry and aliases
 const commandMap = new Map<string, CommandFunction>();
 
 commandMap.set('help', (ctx) => handleHelp(ctx));
@@ -17,6 +17,7 @@ commandMap.set('train', (ctx, args) => handleTrain(ctx, args));
 commandMap.set('party', (ctx, args) => handleParty(ctx, args));
 commandMap.set('link', (ctx, args) => handleLink(ctx, args));
 commandMap.set('setprefix', (ctx, args) => handleSetPrefix(ctx, args));
+commandMap.set('quest', (ctx, args) => handleQuest(ctx, args));
 
 export async function dispatchCommand(ctx: UnifiedContext, command: string, args: string[]) {
   const handler = commandMap.get(command.toLowerCase());

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "q_goblin_01",
+    "title": "Subjugation of Goblins in the Forest",
+    "rank": "C",
+    "description": "Goblins were seen threatening local farmers at the entrance to the forest.",
+    "durationMinutes": 60,
+    "positionX": 15,
+    "positionY": -20,
+    "rewards": {
+      "xp": 150,
+      "items": [
+        {
+            "id": "goblin_ear",
+            "amount": 2,
+            "extraProbability": 0.3,
+            "extraTests": 4
+        },
+        {
+            "id": "echinacea_herb",
+            "amount": 3,
+            "extraProbability": 0.5,
+            "extraTests": 6
+        }
+      ]
+    },
+    "difficulty": 3.5
+  }
+]

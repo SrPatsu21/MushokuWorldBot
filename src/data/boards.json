@@ -1,0 +1,20 @@
+[
+  {
+    "id": "board_central_guild",
+    "name": "Adventurers Guild - Central Capital",
+    "positionX": 0,
+    "positionY": 0,
+    "maxCapacity": 50,
+    "maxRank": "S",
+    "difficultyMultiplier": 1.0
+  },
+  {
+    "id": "board_frontier_outpost",
+    "name": "Northern Frontier Outpost",
+    "positionX": 120,
+    "positionY": -85,
+    "maxCapacity": 30,
+    "maxRank": "B",
+    "difficultyMultiplier": 1.35
+  }
+]

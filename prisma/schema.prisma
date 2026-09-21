@@ -47,6 +47,10 @@ model UserProfile {
   username  String
   createdAt DateTime @default(now()) @map("created_at")
 
+  // Position coordinates
+  positionX Int @default(0) @map("position_x")
+  positionY Int @default(0) @map("position_y")
+
   linkedAccounts LinkedAccount[]
 
   currentHp Int @default(500) @map("current_hp")
@@ -106,7 +110,8 @@ model Party {
   leaderId Int         @unique @map("leader_id")
   leader   UserProfile @relation("PartyLeader", fields: [leaderId], references: [id], onDelete: Cascade)
 
-  members UserProfile[] @relation("PartyMembers")
+  members     UserProfile[] @relation("PartyMembers")
+  boardQuests BoardQuest[]
 
   @@map("parties")
 }
@@ -151,4 +156,48 @@ model MageClass {
   summoning      SkillRank @default(NONE)
 
   @@map("mage_classes")
+}
+
+enum BoardQuestStatus {
+  AVAILABLE
+  TAKEN
+  EXPIRED
+}
+
+model QuestBoard {
+  id                   Int          @id @default(autoincrement())
+  name                 String
+  positionX            Int
+  positionY            Int
+  maxCapacity          Int          @default(50)
+  maxRank              String       @default("S")    // Max quest rank for this region (F, E, D, C, B, A, S)
+  difficultyMultiplier Float        @default(1.0)  // Region difficulty scaling factor
+  quests               BoardQuest[]
+}
+
+model BoardQuest {
+  id              Int              @id @default(autoincrement())
+  questTemplateId String?
+  title           String
+  rank            String
+  description     String
+  durationMinutes Int
+
+  globalPositionX Int
+  globalPositionY Int
+
+  difficulty      Float
+  xpReward        Int
+  itemRewardsJson String
+  isNull          Boolean          @default(false)
+
+  status          BoardQuestStatus @default(AVAILABLE)
+  createdAt       DateTime         @default(now())
+  expiresAt       DateTime
+  takenAt         DateTime?
+  partyId         Int?
+
+  boardId         Int
+  board           QuestBoard       @relation(fields: [boardId], references: [id])
+  party           Party?           @relation(fields: [partyId], references: [id], onDelete: SetNull)
 }

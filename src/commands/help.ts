@@ -24,6 +24,10 @@ export async function handleHelp(ctx: UnifiedContext) {
     `• \`${prefix}party transfer <@user>\` - Pass leader rights (Leader only).`,
     `• \`${prefix}party info\` - Show details about your party.`,
     ``,
+    `**📜 Quests & Quest Boards**`,
+    `• \`${prefix}quest board [page]\` - View available quests on a Quest Board.`,
+    `• \`${prefix}party acceptquest <quest_id>\` - Accept an available quest for your party (Leader only).`,
+    ``,
     `💡 *Note: If a quest fails and your character dies, you will be locked in recovery for 12 hours before reviving with 1 HP.*`,
   ].join('\n');
 
