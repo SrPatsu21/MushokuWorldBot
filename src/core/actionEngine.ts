@@ -1,8 +1,7 @@
 import { prisma } from '../config/database';
-import { ActionType } from '@prisma/client';
+import { ActionType, BoardQuestStatus } from '@prisma/client';
 import { processXPProgression } from './stats';
 import { calculateQuestXpDistribution } from '../commands/party';
-import { ActionType, BoardQuestStatus } from '@prisma/client';
 
 const REGEN_HP_PER_MIN = 5;
 const REGEN_STAMINA_PER_MIN = 10;
@@ -162,6 +161,17 @@ export async function syncProfileState(profileId: number) {
         action = null;
       }
     }
+
+    else if (action.type === ActionType.TRAVEL) {
+      if (isActionCompleted) {
+        positionX = actionData.targetX;
+        positionY = actionData.targetY;
+
+        await prisma.userAction.delete({ where: { id: action.id } });
+        lastRegenUpdate = new Date(actionEndTime);
+        action = null;
+      }
+    }
   }
 
   const updatedStats = processXPProgression({
@@ -185,9 +195,9 @@ export async function syncProfileState(profileId: number) {
       const elapsedMinutes = Math.floor(elapsedSeconds / 60);
 
       if (elapsedMinutes > 0) {
-        currentHp = Math.min(maxHp, currentHp + elapsedMinutes * (REGEN_HP_PER_MIN + (0.002*maxHp)));
-        currentStamina = Math.min(maxStamina, currentStamina + elapsedMinutes * (REGEN_STAMINA_PER_MIN + (0.003*maxStamina)));
-        currentMana = Math.min(maxMana, currentMana + elapsedMinutes * (REGEN_MANA_PER_MIN + (0.002*maxStamina)));
+        currentHp = Math.min(maxHp, currentHp + elapsedMinutes * (REGEN_HP_PER_MIN + (0.002 * maxHp)));
+        currentStamina = Math.min(maxStamina, currentStamina + elapsedMinutes * (REGEN_STAMINA_PER_MIN + (0.003 * maxStamina)));
+        currentMana = Math.min(maxMana, currentMana + elapsedMinutes * (REGEN_MANA_PER_MIN + (0.002 * maxStamina)));
         lastRegenUpdate = now;
       }
     }
