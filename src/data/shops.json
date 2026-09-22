@@ -1,0 +1,38 @@
+[
+  {
+    "slug": "shop_central_market",
+    "name": "Central Capital Market",
+    "positionX": 0,
+    "positionY": 0,
+    "items": [
+      {
+        "itemId": "iron_sword",
+        "price": 20
+      },
+      {
+        "itemId": "leather_armor",
+        "price": 25
+      },
+      {
+        "itemId": "speed_boots",
+        "price": 15
+      }
+    ]
+  },
+  {
+    "slug": "shop_frontier_outpost",
+    "name": "Northern Frontier Merchant",
+    "positionX": 120,
+    "positionY": -85,
+    "items": [
+      {
+        "itemId": "iron_sword",
+        "price": 25
+      },
+      {
+        "itemId": "magic_talisman",
+        "price": 40
+      }
+    ]
+  }
+]

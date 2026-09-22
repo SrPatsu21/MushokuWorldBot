@@ -2,6 +2,7 @@ import { initDatabase } from './config/database';
 import { discordGateway } from './services/discord';
 import { revoltBot } from './services/revolt';
 import { ENV } from './config/env';
+import { seedShops } from './core/shop';
 
 function isTokenValid(token: string | undefined): boolean {
   if (!token) return false;
@@ -15,6 +16,9 @@ async function bootstrap() {
     await initDatabase();
 
     console.log('🚀 starting services...');
+
+    await seedShops();
+    console.log('🏪 Shops seeded successfully!');
 
     // --- CONEXÃO DISCORD ---
     if (isTokenValid(ENV.DISCORD_TOKEN)) {

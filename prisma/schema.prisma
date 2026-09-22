@@ -99,6 +99,8 @@ model UserProfile {
   talisman4ItemId  String?
   inventory        InventoryItem[]
 
+  marketplaceListings MarketplaceListing[]
+
   swordsman SwordsmanClass?
   mage      MageClass?
 
@@ -238,4 +240,39 @@ model BoardQuest {
   boardId         Int
   board           QuestBoard       @relation(fields: [boardId], references: [id])
   party           Party?           @relation(fields: [partyId], references: [id], onDelete: SetNull)
+}
+
+model Shop {
+  id        Int                  @id @default(autoincrement())
+  slug      String               @unique
+  name      String
+  positionX Int
+  positionY Int
+  items     ShopItem[]
+  listings  MarketplaceListing[]
+}
+
+model ShopItem {
+  id     Int    @id @default(autoincrement())
+  shopId Int
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  itemId String
+  price  Int
+}
+
+model MarketplaceListing {
+  id              Int         @id @default(autoincrement())
+  shopId          Int         @map("shop_id")
+  shop            Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  sellerProfileId Int         @map("seller_profile_id")
+  sellerProfile   UserProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
+
+  itemId    String   @map("item_id")
+  price     Int
+  amount    Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+
+  @@map("marketplace_listings")
 }

@@ -7,7 +7,7 @@ import { handleTrain } from '../commands/train';
 import { handleParty } from '../commands/party';
 import { handleQuest } from '../commands/quest';
 import { handleInventory } from '../commands/inventory';
-
+import { handleShop } from '../commands/shop';
 
 type CommandFunction = (ctx: UnifiedContext, args: string[]) => Promise<unknown>;
 
@@ -21,7 +21,7 @@ commandMap.set('link', (ctx, args) => handleLink(ctx, args));
 commandMap.set('setprefix', (ctx, args) => handleSetPrefix(ctx, args));
 commandMap.set('quest', (ctx, args) => handleQuest(ctx, args));
 commandMap.set('inv', (ctx, args) => handleInventory(ctx, args));
-
+commandMap.set('shop', (ctx, args) => handleShop(ctx, args));
 
 export async function dispatchCommand(ctx: UnifiedContext, command: string, args: string[]) {
   const handler = commandMap.get(command.toLowerCase());
