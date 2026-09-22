@@ -38,7 +38,8 @@ async function showShop(ctx: UnifiedContext, profile: any) {
   const slots = await getShopSlots(nearest.shop.id);
   const prefix = await getServerPrefix(ctx.serverId);
 
-  let message = `🏪 **${nearest.shop.name}** \`(X: ${nearest.shop.positionX}, Y: ${nearest.shop.positionY})\`\n`;
+  // Acessa as posições X e Y diretamente da cidade (nearest.city)
+  let message = `🏪 **${nearest.shop.name}** \`(X: ${nearest.city.positionX}, Y:${nearest.city.positionY})\`\n`;
   message += `📍 Distance from you: \`${nearest.distance} blocks\`\n\n`;
   message += `📦 **Showcase (Max 50 slots):**\n`;
 

@@ -2,22 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import { prisma } from '../config/database';
 import { BoardQuestStatus } from '@prisma/client';
-import { Point, QuestTemplate, BoardTemplate, TravelDistanceResult } from '../types/quest';
+import { Point, QuestTemplate, TravelDistanceResult } from './types';
 
 const QUESTS_PATH = path.join(__dirname, '../data/quests.json');
-const BOARDS_PATH = path.join(__dirname, '../data/boards.json');
 
-const RANK_ORDER: Record<string, number> = {
-  F: 1, E: 2, D: 3, C: 4, B: 5, A: 6, S: 7
-};
-
-export function loadQuestTemplates(): QuestTemplate[] {
+function loadQuestTemplates(): QuestTemplate[] {
   const fileData = fs.readFileSync(QUESTS_PATH, 'utf-8');
-  return JSON.parse(fileData);
-}
-
-export function loadBoardTemplates(): BoardTemplate[] {
-  const fileData = fs.readFileSync(BOARDS_PATH, 'utf-8');
   return JSON.parse(fileData);
 }
 
@@ -45,49 +35,26 @@ export function calculateTravelTimeMinutes(totalDistanceBlocks: number): number 
   return Math.ceil((totalDistanceBlocks / BLOCKS_PER_HOUR) * 60);
 }
 
-export async function syncBoardsFromJson() {
-  const boardTemplates = loadBoardTemplates();
-
-  for (const template of boardTemplates) {
-    const existing = await prisma.questBoard.findFirst({
-      where: { name: template.name },
-    });
-
-    if (!existing) {
-      await prisma.questBoard.create({
-        data: {
-          name: template.name,
-          positionX: template.positionX,
-          positionY: template.positionY,
-          maxCapacity: template.maxCapacity,
-          maxRank: template.maxRank,
-          difficultyMultiplier: template.difficultyMultiplier,
-        },
-      });
-    }
-  }
-}
-
 export async function getNearestBoard(userPos: Point) {
-  await syncBoardsFromJson();
+  const boards = await prisma.questBoard.findMany({
+    include: { city: true },
+  });
 
-  const boards = await prisma.questBoard.findMany();
   if (boards.length === 0) return null;
 
   let nearestBoard = boards[0];
   let minDistance = calculateManhattanDistance(userPos, {
-    x: nearestBoard.positionX,
-    y: nearestBoard.positionY,
+    x: nearestBoard.city.positionX,
+    y: nearestBoard.city.positionY,
   });
 
   for (let i = 1; i < boards.length; i++) {
-    const distance = calculateManhattanDistance(userPos, {
-      x: boards[i].positionX,
-      y: boards[i].positionY,
+    const dist = calculateManhattanDistance(userPos, {
+      x: boards[i].city.positionX,
+      y: boards[i].city.positionY,
     });
-
-    if (distance < minDistance) {
-      minDistance = distance;
+    if (dist < minDistance) {
+      minDistance = dist;
       nearestBoard = boards[i];
     }
   }
@@ -96,7 +63,10 @@ export async function getNearestBoard(userPos: Point) {
 }
 
 export async function refreshBoard(boardId: number) {
-  const board = await prisma.questBoard.findUnique({ where: { id: boardId } });
+  const board = await prisma.questBoard.findUnique({
+    where: { id: boardId },
+    include: { city: true },
+  });
   if (!board) return;
 
   const now = new Date();
@@ -126,16 +96,9 @@ export async function refreshBoard(boardId: number) {
     },
   });
 
-  const boardMaxRankLevel = RANK_ORDER[board.maxRank] || 7;
-
-  // Filter quest templates to match the board rank ceiling
-  const validTemplates = loadQuestTemplates().filter(
-    (t) => (RANK_ORDER[t.rank] || 1) <= boardMaxRankLevel
-  );
-
-  if (validTemplates.length === 0) return;
-
+  const templates = loadQuestTemplates();
   const availableSlots = board.maxCapacity - activeQuestsCount;
+
   const realQuestsToGenerate = Math.min(
     Math.floor(Math.random() * 10) + 5,
     availableSlots
@@ -144,13 +107,9 @@ export async function refreshBoard(boardId: number) {
   const newQuestsData = [];
 
   for (let i = 0; i < realQuestsToGenerate; i++) {
-    const template = validTemplates[Math.floor(Math.random() * validTemplates.length)];
+    const template = templates[Math.floor(Math.random() * templates.length)];
     const randomHours = Math.floor(Math.random() * 48) + 1;
     const expiresAt = new Date(now.getTime() + randomHours * 60 * 60 * 1000);
-
-    // Apply region difficulty scaling to difficulty and XP
-    const scaledDifficulty = Number((template.difficulty * board.difficultyMultiplier).toFixed(1));
-    const scaledXp = Math.round(template.rewards.xp * board.difficultyMultiplier);
 
     newQuestsData.push({
       boardId: board.id,
@@ -159,10 +118,10 @@ export async function refreshBoard(boardId: number) {
       rank: template.rank,
       description: template.description,
       durationMinutes: template.durationMinutes,
-      globalPositionX: board.positionX + template.positionX,
-      globalPositionY: board.positionY + template.positionY,
-      difficulty: scaledDifficulty,
-      xpReward: scaledXp,
+      globalPositionX: board.city.positionX + template.positionX,
+      globalPositionY: board.city.positionY + template.positionY,
+      difficulty: template.difficulty,
+      xpReward: template.rewards.xp,
       itemRewardsJson: JSON.stringify(template.rewards.items),
       isNull: false,
       expiresAt,
@@ -178,8 +137,8 @@ export async function refreshBoard(boardId: number) {
       rank: '-',
       description: 'No notice posted in this section of the board.',
       durationMinutes: 0,
-      globalPositionX: board.positionX,
-      globalPositionY: board.positionY,
+      globalPositionX: board.city.positionX,
+      globalPositionY: board.city.positionY,
       difficulty: 0,
       xpReward: 0,
       itemRewardsJson: '[]',
@@ -188,7 +147,5 @@ export async function refreshBoard(boardId: number) {
     });
   }
 
-  if (newQuestsData.length > 0) {
-    await prisma.boardQuest.createMany({ data: newQuestsData });
-  }
+  await prisma.boardQuest.createMany({ data: newQuestsData });
 }

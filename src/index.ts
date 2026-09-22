@@ -2,7 +2,7 @@ import { initDatabase } from './config/database';
 import { discordGateway } from './services/discord';
 import { revoltBot } from './services/revolt';
 import { ENV } from './config/env';
-import { seedShops } from './core/shop';
+import { syncWorldDataFromJSON } from './core/syncWorldData';
 
 function isTokenValid(token: string | undefined): boolean {
   if (!token) return false;
@@ -15,12 +15,12 @@ async function bootstrap() {
     console.log('⚡ Connected to DB...');
     await initDatabase();
 
-    console.log('🚀 starting services...');
+    console.log('🚀 Synchronizing world data from JSONs...');
+    await syncWorldDataFromJSON();
 
-    await seedShops();
-    console.log('🏪 Shops seeded successfully!');
+    console.log('🚀 Starting services...');
 
-    // --- CONEXÃO DISCORD ---
+    // --- DISCORD ---
     if (isTokenValid(ENV.DISCORD_TOKEN)) {
       try {
         await discordGateway.connect();
@@ -32,7 +32,7 @@ async function bootstrap() {
       console.warn('⚠️ Discord: No valid Token was provided at secrets/discord_token.txt connection ignore.');
     }
 
-    // --- CONEXÃO REVOLT ---
+    // --- REVOLT ---
     if (isTokenValid(ENV.REVOLT_TOKEN)) {
       try {
         await revoltBot.loginBot(ENV.REVOLT_TOKEN);
@@ -44,7 +44,7 @@ async function bootstrap() {
       console.warn('⚠️ Revolt: No valid Token was provided at secrets/revolt_token.txt connection ignore.');
     }
 
-    console.log('🚀 process initialization concluded!');
+    console.log('🚀 Process initialization concluded!');
   } catch (error) {
     console.error('❌ Fatal error on DB:', error);
     process.exit(1);

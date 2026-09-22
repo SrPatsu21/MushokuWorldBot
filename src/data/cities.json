@@ -1,0 +1,24 @@
+[
+  {
+    "id": "city_sharia",
+    "name": "Sharia Magic City",
+    "positionX": 0,
+    "positionY": 0,
+    "kingdom": "Ranoa Kingdom",
+    "race": "Human / Demon",
+    "climate": "TEMPERATE",
+    "description": "A bustling city known for its Magic Academy and central commerce.",
+    "dangerLevel": "LOW"
+  },
+  {
+    "id": "city_roa",
+    "name": "Roa Citadel",
+    "positionX": 120,
+    "positionY": -85,
+    "kingdom": "Asura Kingdom",
+    "race": "Human",
+    "climate": "ARID",
+    "description": "A fortress town located in the Fittoa region, heavily guarded by noble knights.",
+    "dangerLevel": "MEDIUM"
+  }
+]

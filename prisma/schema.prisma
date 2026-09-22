@@ -145,13 +145,14 @@ model InventoryItem {
   id        Int         @id @default(autoincrement())
   profileId Int
   profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  
-  itemId    String      // ID que bate com o itens.json (ex: "millis_silver_coins", "iron_sword")
+
+  itemId    String
   amount    Int         @default(1)
-  slotIndex Int?        // 0 a 19 para itens gerais. Null se for moeda ("millis_silver_coins")
+  slotIndex Int?
 
   @@unique([profileId, slotIndex])
   @@index([profileId])
+  @@map("inventory_items")
 }
 
 model LinkedAccount {
@@ -204,60 +205,90 @@ enum BoardQuestStatus {
   FAILED
 }
 
+model City {
+  id          String   @id // ex: "city_sharia"
+  name        String
+  positionX   Int      @map("position_x")
+  positionY   Int      @map("position_y")
+  kingdom     String
+  race        String
+  climate     String
+  description String
+  dangerLevel String   @default("LOW") @map("danger_level")
+
+  shops       Shop[]
+  questBoards QuestBoard[]
+
+  @@map("cities")
+}
+
 model QuestBoard {
   id                   Int          @id @default(autoincrement())
+  slug                 String       @unique
   name                 String
-  positionX            Int
-  positionY            Int
-  maxCapacity          Int          @default(50)
-  maxRank              String       @default("S")    // Max quest rank for this region (F, E, D, C, B, A, S)
-  difficultyMultiplier Float        @default(1.0)  // Region difficulty scaling factor
+
+  cityId               String       @map("city_id")
+  city                 City         @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  maxCapacity          Int          @default(50) @map("max_capacity")
+  maxRank              String       @default("S") @map("max_rank")
+  difficultyMultiplier Float        @default(1.0) @map("difficulty_multiplier")
   quests               BoardQuest[]
+
+  @@map("quest_boards")
 }
 
 model BoardQuest {
   id              Int              @id @default(autoincrement())
-  questTemplateId String?
+  questTemplateId String?          @map("quest_template_id")
   title           String
   rank            String
   description     String
-  durationMinutes Int
+  durationMinutes Int              @map("duration_minutes")
 
-  globalPositionX Int
-  globalPositionY Int
+  globalPositionX Int              @map("global_position_x")
+  globalPositionY Int              @map("global_position_y")
 
   difficulty      Float
-  xpReward        Int
-  itemRewardsJson String
-  isNull          Boolean          @default(false)
+  xpReward        Int              @map("xp_reward")
+  itemRewardsJson String           @map("item_rewards_json")
+  isNull          Boolean          @default(false) @map("is_null")
 
   status          BoardQuestStatus @default(AVAILABLE)
-  createdAt       DateTime         @default(now())
-  expiresAt       DateTime
-  takenAt         DateTime?
-  partyId         Int?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  expiresAt       DateTime         @map("expires_at")
+  takenAt         DateTime?        @map("taken_at")
+  partyId         Int?             @map("party_id")
 
-  boardId         Int
-  board           QuestBoard       @relation(fields: [boardId], references: [id])
+  boardId         Int              @map("board_id")
+  board           QuestBoard       @relation(fields: [boardId], references: [id], onDelete: Cascade)
   party           Party?           @relation(fields: [partyId], references: [id], onDelete: SetNull)
+
+  @@map("board_quests")
 }
 
 model Shop {
   id        Int                  @id @default(autoincrement())
   slug      String               @unique
   name      String
-  positionX Int
-  positionY Int
+
+  cityId    String               @map("city_id")
+  city      City                 @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
   items     ShopItem[]
   listings  MarketplaceListing[]
+
+  @@map("shops")
 }
 
 model ShopItem {
   id     Int    @id @default(autoincrement())
-  shopId Int
+  shopId Int    @map("shop_id")
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  itemId String
+  itemId String @map("item_id")
   price  Int
+
+  @@map("shop_items")
 }
 
 model MarketplaceListing {
@@ -268,11 +299,11 @@ model MarketplaceListing {
   sellerProfileId Int         @map("seller_profile_id")
   sellerProfile   UserProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Cascade)
 
-  itemId    String   @map("item_id")
+  itemId    String            @map("item_id")
   price     Int
-  amount    Int      @default(1)
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
+  amount    Int               @default(1)
+  createdAt DateTime          @default(now()) @map("created_at")
+  expiresAt DateTime          @map("expires_at")
 
   @@map("marketplace_listings")
 }

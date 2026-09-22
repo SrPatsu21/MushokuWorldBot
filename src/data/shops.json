@@ -1,9 +1,8 @@
 [
   {
-    "slug": "shop_central_market",
-    "name": "Central Capital Market",
-    "positionX": 0,
-    "positionY": 0,
+    "slug": "shop_sharia_market",
+    "name": "Sharia Grand Market",
+    "cityId": "city_sharia",
     "items": [
       {
         "itemId": "iron_sword",
@@ -20,10 +19,9 @@
     ]
   },
   {
-    "slug": "shop_frontier_outpost",
-    "name": "Northern Frontier Merchant",
-    "positionX": 120,
-    "positionY": -85,
+    "slug": "shop_roa_merchant",
+    "name": "Roa Military Merchant",
+    "cityId": "city_roa",
     "items": [
       {
         "itemId": "iron_sword",

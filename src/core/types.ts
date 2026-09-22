@@ -41,14 +41,32 @@ export interface QuestTemplate {
   difficulty: number;
 }
 
-export interface BoardTemplate {
+export interface CityTemplate {
   id: string;
   name: string;
   positionX: number;
   positionY: number;
-  maxCapacity: number;
-  maxRank: string;
-  difficultyMultiplier: number;
+  kingdom: string;
+  race: string;
+  climate: string;
+  description: string;
+  dangerLevel: string;
+}
+
+export interface BoardTemplate {
+  slug: string;
+  name: string;
+  cityId: string;
+  maxCapacity?: number;
+  maxRank?: string;
+  difficultyMultiplier?: number;
+}
+
+export interface ShopTemplate {
+  slug: string;
+  name: string;
+  cityId: string;
+  items: { itemId: string; price: number }[];
 }
 
 export interface TravelDistanceResult {

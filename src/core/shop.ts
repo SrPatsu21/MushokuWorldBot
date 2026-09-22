@@ -1,51 +1,6 @@
-import fs from 'fs';
-import path from 'path';
 import { prisma } from '../config/database';
 import { getItemDefinition, addCoins, getPlayerCoins } from './inventory';
 import { calculateManhattanDistance } from './quest';
-
-const SHOPS_PATH = path.join(__dirname, '../data/shops.json');
-
-export interface ShopTemplate {
-  slug: string;
-  name: string;
-  positionX: number;
-  positionY: number;
-  items: { itemId: string; price: number }[];
-}
-
-export async function seedShops() {
-  if (!fs.existsSync(SHOPS_PATH)) return;
-
-  const fileData = fs.readFileSync(SHOPS_PATH, 'utf-8');
-  const shopTemplates: ShopTemplate[] = JSON.parse(fileData);
-
-  for (const template of shopTemplates) {
-    const shop = await prisma.shop.upsert({
-      where: { slug: template.slug },
-      update: {
-        name: template.name,
-        positionX: template.positionX,
-        positionY: template.positionY,
-      },
-      create: {
-        slug: template.slug,
-        name: template.name,
-        positionX: template.positionX,
-        positionY: template.positionY,
-      },
-    });
-
-    await prisma.shopItem.deleteMany({ where: { shopId: shop.id } });
-    await prisma.shopItem.createMany({
-      data: template.items.map((item) => ({
-        shopId: shop.id,
-        itemId: item.itemId,
-        price: item.price,
-      })),
-    });
-  }
-}
 
 export interface ShopSlot {
   slotNumber: number;
@@ -60,19 +15,21 @@ export interface ShopSlot {
 }
 
 export async function getNearestShop(userPosX: number, userPosY: number) {
-  const shops = await prisma.shop.findMany();
+  const shops = await prisma.shop.findMany({
+    include: { city: true },
+  });
   if (shops.length === 0) return null;
 
   let nearestShop = shops[0];
   let minDistance = calculateManhattanDistance(
     { x: userPosX, y: userPosY },
-    { x: nearestShop.positionX, y: nearestShop.positionY }
+    { x: nearestShop.city.positionX, y: nearestShop.city.positionY }
   );
 
   for (let i = 1; i < shops.length; i++) {
     const dist = calculateManhattanDistance(
       { x: userPosX, y: userPosY },
-      { x: shops[i].positionX, y: shops[i].positionY }
+      { x: shops[i].city.positionX, y: shops[i].city.positionY }
     );
     if (dist < minDistance) {
       minDistance = dist;
@@ -80,7 +37,7 @@ export async function getNearestShop(userPosX: number, userPosY: number) {
     }
   }
 
-  return { shop: nearestShop, distance: minDistance };
+  return { shop: nearestShop, city: nearestShop.city, distance: minDistance };
 }
 
 export async function processExpiredListings() {

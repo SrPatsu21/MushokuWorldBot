@@ -94,10 +94,10 @@ async function showNearestQuestBoard(ctx: UnifiedContext, page = 1) {
     orderBy: { createdAt: 'desc' },
   });
 
-  const boardPos = { x: board.positionX, y: board.positionY };
+  const boardPos = { x: board.city.positionX, y: board.city.positionY };
 
   let message = `📜 **Nearest Board: ${board.name}** [Page ${currentPage}/${totalPages}]\n`;
-  message += `📍 **Your Position:** (${userPos.x},${userPos.y}) | **Board Position:** (${board.positionX},${board.positionY})\n`;
+  message += `📍 **Your Position:** (${userPos.x},${userPos.y}) | **Board Position:** (${boardPos.x},${boardPos.y})\n`;
   message += `⚔️ **Region Rating:** Max Rank \`${board.maxRank}\` | Difficulty Multiplier \`${board.difficultyMultiplier}x\`\n\n`;
 
   quests.forEach((q) => {

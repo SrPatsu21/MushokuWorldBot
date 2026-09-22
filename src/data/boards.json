@@ -1,18 +1,16 @@
 [
   {
-    "id": "board_central_guild",
-    "name": "Adventurers Guild - Central Capital",
-    "positionX": 0,
-    "positionY": 0,
+    "slug": "board_sharia_guild",
+    "name": "Sharia Adventurers Guild",
+    "cityId": "city_sharia",
     "maxCapacity": 50,
     "maxRank": "S",
     "difficultyMultiplier": 1.0
   },
   {
-    "id": "board_frontier_outpost",
-    "name": "Northern Frontier Outpost",
-    "positionX": 120,
-    "positionY": -85,
+    "slug": "board_roa_outpost",
+    "name": "Roa Outpost Guild",
+    "cityId": "city_roa",
     "maxCapacity": 30,
     "maxRank": "B",
     "difficultyMultiplier": 1.35
