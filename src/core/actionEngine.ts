@@ -23,6 +23,73 @@ export async function triggerPlayerDeath(profileId: number, reason: string = 'Qu
   });
 }
 
+async function grantQuestItemsToProfile(profileId: number, itemsRewardsJson: string) {
+  try {
+    const rewards: Array<{
+      id: string;
+      amount: number;
+      extraProbability?: number;
+      extraTests?: number;
+    }> = JSON.parse(itemsRewardsJson || '[]');
+
+    if (!Array.isArray(rewards) || rewards.length === 0) return;
+
+    const currentInventory = await prisma.userInventory.findMany({
+      where: { profileId },
+    });
+
+    const usedSlots = new Set(currentInventory.map((i) => i.slot));
+
+    for (const reward of rewards) {
+      let finalQuantity = reward.amount || 1;
+
+      if (reward.extraProbability && reward.extraTests) {
+        for (let i = 0; i < reward.extraTests; i++) {
+          if (Math.random() < reward.extraProbability) {
+            finalQuantity += 1;
+          }
+        }
+      }
+
+      if (finalQuantity <= 0) continue;
+
+      const existingItem = currentInventory.find((i) => i.itemId === reward.id);
+
+      if (existingItem) {
+        await prisma.userInventory.update({
+          where: { id: existingItem.id },
+          data: { quantity: existingItem.quantity + finalQuantity },
+        });
+      } else {
+        let freeSlot = -1;
+        for (let slot = 1; slot <= 20; slot++) {
+          if (!usedSlots.has(slot)) {
+            freeSlot = slot;
+            break;
+          }
+        }
+
+        if (freeSlot !== -1) {
+          const newItem = await prisma.userInventory.create({
+            data: {
+              profileId,
+              itemId: reward.id,
+              quantity: finalQuantity,
+              slot: freeSlot,
+            },
+          });
+          usedSlots.add(freeSlot);
+          currentInventory.push(newItem);
+        } else {
+          console.warn(`[Quest Reward] Profile ${profileId} inventory full! Could not grant item: ${reward.id}`);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error processing quest item rewards:', err);
+  }
+}
+
 export async function syncProfileState(profileId: number) {
   let profile = await prisma.userProfile.findUnique({
     where: { id: profileId },
@@ -137,7 +204,7 @@ export async function syncProfileState(profileId: number) {
         });
 
         if (quest) {
-          const totalQuestXp = quest.rewardXp || 100;
+          const totalQuestXp = quest.xpReward || 100;
 
           const { staminaXp: sXp, manaXp: mXp } = calculateQuestXpDistribution(
             profile.partyRoles,
@@ -149,6 +216,8 @@ export async function syncProfileState(profileId: number) {
 
           positionX = actionData.returnBoardPositionX;
           positionY = actionData.returnBoardPositionY;
+
+          await grantQuestItemsToProfile(profileId, quest.itemRewardsJson);
 
           await prisma.boardQuest.update({
             where: { id: quest.id },

@@ -11,19 +11,73 @@
       "xp": 150,
       "items": [
         {
-            "id": "goblin_ear",
-            "amount": 2,
-            "extraProbability": 0.3,
-            "extraTests": 4
+          "id": "goblin_ear",
+          "amount": 2,
+          "extraProbability": 0.3,
+          "extraTests": 4
         },
         {
-            "id": "echinacea_herb",
-            "amount": 3,
-            "extraProbability": 0.5,
-            "extraTests": 6
+          "id": "echinacea_herb",
+          "amount": 3,
+          "extraProbability": 0.5,
+          "extraTests": 6
         }
       ]
     },
     "difficulty": 3.5
+  },
+  {
+    "id": "q_wolf_hunt_02",
+    "title": "Dire Wolf Pack Hunt",
+    "rank": "B",
+    "description": "A pack of aggressive wolves is blocking the main trade route.",
+    "durationMinutes": 90,
+    "positionX": -30,
+    "positionY": 10,
+    "rewards": {
+      "xp": 300,
+      "items": [
+        {
+          "id": "wolf_pelt",
+          "amount": 3,
+          "extraProbability": 0.4,
+          "extraTests": 5
+        },
+        {
+          "id": "speed_boots",
+          "amount": 1,
+          "extraProbability": 0.1,
+          "extraTests": 1
+        }
+      ]
+    },
+    "difficulty": 5.0
+  },
+  {
+    "id": "q_shadow_cave_03",
+    "title": "Exploration of the Shadow Cave",
+    "rank": "A",
+    "description": "Investigate the mysterious dark energy coming from deep within the old mine.",
+    "durationMinutes": 120,
+    "positionX": 45,
+    "positionY": 50,
+    "rewards": {
+      "xp": 600,
+      "items": [
+        {
+          "id": "shadow_crystal",
+          "amount": 1,
+          "extraProbability": 0.25,
+          "extraTests": 3
+        },
+        {
+          "id": "magic_talisman",
+          "amount": 1,
+          "extraProbability": 0.15,
+          "extraTests": 1
+        }
+      ]
+    },
+    "difficulty": 8.0
   }
 ]

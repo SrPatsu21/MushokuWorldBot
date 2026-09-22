@@ -52,5 +52,29 @@
       "defense": 0,
       "magicDefense": 5
     }
+  },
+  {
+    "id": "goblin_ear",
+    "name": "Goblin Ear",
+    "type": "MATERIAL",
+    "value": 5
+  },
+  {
+    "id": "echinacea_herb",
+    "name": "Echinacea Herb",
+    "type": "CONSUMABLE",
+    "value": 8
+  },
+  {
+    "id": "wolf_pelt",
+    "name": "Wolf Pelt",
+    "type": "MATERIAL",
+    "value": 10
+  },
+  {
+    "id": "shadow_crystal",
+    "name": "Shadow Crystal",
+    "type": "MATERIAL",
+    "value": 45
   }
 ]
